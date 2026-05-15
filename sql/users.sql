@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  username VARCHAR(64) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  reset_token VARCHAR(255) NULL,
+  reset_token_expires DATETIME NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_email (email),
+  UNIQUE KEY uq_username (username)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

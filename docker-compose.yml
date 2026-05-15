@@ -1,0 +1,23 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: leadsdb-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_change_me
+      MYSQL_DATABASE: LeadsDB
+      MYSQL_USER: leads_user
+      MYSQL_PASSWORD: leads_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - leadsdb_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot_password_change_me"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+
+volumes:
+  leadsdb_mysql_data:
+

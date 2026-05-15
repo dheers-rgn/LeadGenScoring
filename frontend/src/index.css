@@ -1,0 +1,280 @@
+/* ── Global ── */
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  --bg:          #1a4a3a;
+  --bg-pattern:  rgba(0,0,0,0.18);
+  --card-bg:     #ffffff;
+  --card-border: #e0e0e0;
+  --text-dark:   #1a2e1a;
+  --text-muted:  #6b7b6b;
+  --accent:      #f5c400;
+  --accent-dark: #d4a800;
+  --brand-green: #2a6040;
+  --error:       #d32f2f;
+  --success:     #2e7d32;
+  font-size: 15px;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 20% 80%, rgba(0,0,0,0.25) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(0,80,40,0.3) 0%, transparent 50%);
+  min-height: 100vh;
+  color: var(--text-dark);
+}
+
+/* ── Auth layout ── */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px 48px;
+}
+
+/* ── Brand header above card ── */
+.brand-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 28px;
+  user-select: none;
+}
+
+.brand-logo {
+  margin-bottom: 12px;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+}
+
+.brand-name {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: #ffffff;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.brand-subtitle {
+  font-size: 11px;
+  letter-spacing: 4.5px;
+  color: rgba(255,255,255,0.75);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* ── Auth card ── */
+.auth-card {
+  background: var(--card-bg);
+  border-radius: 6px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  overflow: hidden;
+}
+
+.auth-card-wide {
+  max-width: 480px;
+}
+
+.auth-card-header {
+  background: var(--brand-green);
+  padding: 18px 28px 16px;
+  border-bottom: 4px solid var(--accent);
+}
+
+.auth-card-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.auth-card-body {
+  padding: 28px 28px 24px;
+}
+
+/* ── Form elements ── */
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 13px;
+  border: 1.5px solid var(--card-border);
+  border-radius: 4px;
+  font-size: 14px;
+  color: var(--text-dark);
+  background: #fafafa;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--brand-green);
+  box-shadow: 0 0 0 3px rgba(42,96,64,0.15);
+  background: #fff;
+}
+
+.form-input::placeholder {
+  color: #b0bdb0;
+}
+
+/* ── Buttons ── */
+.btn-primary {
+  width: 100%;
+  padding: 12px;
+  background: var(--brand-green);
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  margin-top: 4px;
+}
+
+.btn-primary:hover {
+  background: #1e4d30;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+  background: #8aab97;
+  cursor: not-allowed;
+}
+
+/* ── Yellow accent line at card bottom ── */
+.accent-bar {
+  height: 5px;
+  background: var(--accent);
+}
+
+/* ── Links ── */
+.auth-links {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+  font-size: 13px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.auth-link {
+  color: var(--brand-green);
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+  color: #1a4028;
+}
+
+/* ── Messages ── */
+.form-error {
+  background: #ffebee;
+  color: var(--error);
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  padding: 10px 13px;
+  font-size: 13px;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.form-success {
+  background: #e8f5e9;
+  color: var(--success);
+  border: 1px solid #c8e6c9;
+  border-radius: 4px;
+  padding: 10px 13px;
+  font-size: 13px;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+/* ── Password toggle ── */
+.input-wrap {
+  position: relative;
+}
+
+.input-wrap .form-input {
+  padding-right: 42px;
+}
+
+.pw-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 16px;
+  padding: 0;
+  line-height: 1;
+}
+
+/* ── Divider ── */
+.divider {
+  border: none;
+  border-top: 1px solid var(--card-border);
+  margin: 20px 0 16px;
+}
+
+/* ── Decorative corner circles (match screenshot) ── */
+.corner-circle-tl {
+  position: fixed;
+  bottom: 40px;
+  left: 40px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.corner-circle-tr {
+  position: fixed;
+  top: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.55;
+  pointer-events: none;
+}

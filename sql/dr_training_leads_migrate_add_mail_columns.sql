@@ -1,0 +1,6 @@
+-- Superseded by:
+--   sql/dr_email_generation_status.sql
+--   sql/dr_training_leads_migrate_is_email_generated.sql
+--
+-- The backend auto-migrates legacy IsMailGenerated -> IsEmailGenerated on startup.
+-- Use the files above for manual DBA runs.

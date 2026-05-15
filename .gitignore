@@ -1,0 +1,90 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Build output
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+.turbo/
+.vite/
+
+# Environment variables (never commit secrets / local paths)
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime / coverage
+pids/
+*.pid
+*.seed
+*.pid.lock
+coverage/
+*.lcov
+.nyc_output/
+
+# Testing
+.jest-cache/
+__snapshots__/
+
+# Editors / IDEs
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# OS junk
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Local data / dumps (this project ingests Excel + MySQL)
+*.xlsx
+*.xls
+*.csv
+*.sqlite
+*.sqlite3
+*.db
+mysql-data/
+db-data/
+docker-data/
+dumps/
+backup/
+backups/
+
+# TypeScript / build artifacts
+*.tsbuildinfo
+
+# Misc
+.eslintcache
+.stylelintcache
+.history/
+tmp/
+temp/
