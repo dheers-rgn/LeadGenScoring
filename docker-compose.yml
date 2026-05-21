@@ -1,23 +1,82 @@
 services:
   mysql:
-    image: mysql:8.4
-    container_name: leadsdb-mysql
+    image: ${MYSQL_IMAGE:-mysql:8.4}
+    container_name: ${MYSQL_CONTAINER_NAME:-leadsdb-mysql}
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root_password_change_me
-      MYSQL_DATABASE: LeadsDB
-      MYSQL_USER: leads_user
-      MYSQL_PASSWORD: leads_pass
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password_change_me}
+      MYSQL_DATABASE: ${DB_NAME:-LeadsDB}
+      MYSQL_USER: ${DB_USER:-leads_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-leads_pass}
     ports:
-      - "3306:3306"
+      - "${DB_PORT:-3306}:3306"
     volumes:
       - leadsdb_mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot_password_change_me"]
+      test:
+        - "CMD"
+        - "mysqladmin"
+        - "ping"
+        - "-h"
+        - "127.0.0.1"
+        - "-u"
+        - "root"
+        - "-p${MYSQL_ROOT_PASSWORD:-root_password_change_me}"
       interval: 5s
       timeout: 3s
       retries: 40
 
+  backend:
+    build:
+      context: ./backend
+    container_name: ${BACKEND_CONTAINER_NAME:-leadsdb-backend}
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      # Override host-specific values from .env so the backend container
+      # talks to the `mysql` service (not 127.0.0.1) and reads the
+      # Excel workbooks from the bind-mounted /data directory below.
+      DATABASE_URL: mysql://${DB_USER:-leads_user}:${DB_PASSWORD:-leads_pass}@mysql:3306/${DB_NAME:-LeadsDB}
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      PORT: "8080"
+      ALL_EXCEL_PATH: /data/LeadAnalysis.xlsx
+      CONV_EXCEL_PATH: /data/LeadConverted.xlsx
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    volumes:
+      - ${ALL_EXCEL_PATH:-./LeadAnalysis.xlsx}:/data/LeadAnalysis.xlsx:ro
+      - ${CONV_EXCEL_PATH:-./LeadConverted.xlsx}:/data/LeadConverted.xlsx:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD"
+        - "node"
+        - "-e"
+        - "require('http').get('http://127.0.0.1:8080/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Baked into the bundle at build time. Browser hits this URL, so
+        # it must be resolvable from the user's machine, not from inside
+        # the container network.
+        VITE_API_BASE: ${VITE_API_BASE:-http://localhost:${BACKEND_PORT:-8080}}
+    container_name: ${FRONTEND_CONTAINER_NAME:-leadsdb-frontend}
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
 volumes:
   leadsdb_mysql_data:
-
