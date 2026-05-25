@@ -40,7 +40,13 @@ export default function App() {
   }
 
   // ── Auth screens (no shell) ──────────────────────────────
-  if (!user || page === "login") {
+  if (!user) {
+    if (page === "register") {
+      return <RegisterPage onLogin={handleLogin} onGoLogin={() => setPage("login")} />;
+    }
+    if (page === "forgot") {
+      return <ForgotPasswordPage onGoLogin={() => setPage("login")} />;
+    }
     return (
       <LoginPage
         onLogin={handleLogin}
@@ -48,12 +54,6 @@ export default function App() {
         onGoForgot={() => setPage("forgot")}
       />
     );
-  }
-  if (page === "register") {
-    return <RegisterPage onLogin={handleLogin} onGoLogin={() => setPage("login")} />;
-  }
-  if (page === "forgot") {
-    return <ForgotPasswordPage onGoLogin={() => setPage("login")} />;
   }
 
   // ── Authenticated screens (wrapped in AppShell) ──────────
