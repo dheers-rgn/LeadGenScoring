@@ -27,6 +27,7 @@ function matchSlug(featureKey, slug) {
 
 export default function LCTPScreen({ onBack }) {
   const [params, setParams]     = useState([]);
+  console.log("Params state initialized:", params);
   const [status, setStatus]     = useState("Loading…");
   const [error, setError]       = useState("");
   const [building, setBuilding] = useState(false);
@@ -40,6 +41,7 @@ export default function LCTPScreen({ onBack }) {
     try {
       const data = await apiGet("/api/ml/params?version=latest");
       setParams(data.params || []);
+      console.log("Loaded params:", data);
       setStatus(`${(data.params || []).length} parameter rows loaded.`);
     } catch (e) {
       setError(e.message);
@@ -70,6 +72,7 @@ export default function LCTPScreen({ onBack }) {
     acc[k].push(row);
     return acc;
   }, {});
+  console.log("Grouped params by feature_key:", grouped); 
 
   // Build ordered tile list from FEATURE_ORDER, aggregating counts
   const tiles = FEATURE_ORDER.map(({ slug, label, icon }) => {
@@ -187,7 +190,10 @@ function DetailView({ label, rows, onBack }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, i) => (
+              {rows.map((row, i) => {
+                console.log("Rendering row:", row);
+                return (
+                  (
                 <tr
                   key={i}
                   style={{ background: i % 2 === 0 ? "rgba(0,0,0,0.14)" : "transparent" }}
@@ -207,7 +213,9 @@ function DetailView({ label, rows, onBack }) {
                     {row.score_logit != null ? Number(row.score_logit).toFixed(4) : "—"}
                   </td>
                 </tr>
-              ))}
+              )
+                )
+              })}
             </tbody>
           </table>
         </div>

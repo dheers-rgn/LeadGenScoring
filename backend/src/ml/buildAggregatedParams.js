@@ -194,7 +194,7 @@ async function collectFeatureCounts(pool) {
     const convRows = await queryRows(pool, m.convTable);
 
     for (const r of allRows) {
-      const val = String(r[m.allValueCol] ?? "").trim();
+      const val = norm(r[m.allValueCol]);
       if (!val) continue;
       if (m.feature === "country") {
         upsertMax(featureMaps.country.all, val, r[m.allCountCol]);
@@ -203,7 +203,7 @@ async function collectFeatureCounts(pool) {
       }
     }
     for (const r of convRows) {
-      const val = String(r[m.convValueCol] ?? "").trim();
+      const val = norm(r[m.convValueCol]);
       if (!val) continue;
       if (m.feature === "country") {
         upsertMax(featureMaps.country.conv, val, r[m.convCountCol]);
@@ -228,13 +228,16 @@ export async function buildAggregatedMlParams(pool, env = process.env) {
   const rows = [];
 
   for (const [featureKey, maps] of Object.entries(featureMaps)) {
+    
     const values = new Set([...maps.all.keys(), ...maps.conv.keys()]);
     if (featureKey === "lead_status") {
       values.add("Lead");
       values.add("Re-enquired");
     }
+    console.log("FEATURE KEYS:", Object.keys(featureMaps));
 
     for (const value of values) {
+      console.log("FEATURE KEYS:", Object.keys(featureMaps));
       const allCount = maps.all.get(value) || 0;
       let convCount = maps.conv.get(value) || 0;
       let probability = (convCount + alpha) / (allCount + alpha + beta);
