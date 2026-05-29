@@ -87,15 +87,31 @@ async function loadLogitMaps(pool, modelVersion) {
 
 function scoreRow(row, maps) {
   let z = 0;
+  let matched = 0;
+
   for (const { key, col } of FEATURE_COLUMNS) {
     const raw = row[col];
     if (raw == null || String(raw).trim() === "") continue;
+
     const k = norm(raw);
     const logit = maps.get(key)?.get(k);
-    if (logit != null && Number.isFinite(logit)) z += logit;
+
+    if (logit != null && Number.isFinite(logit)) {
+      z += logit;
+      matched += 1;
+    }
   }
+
+  if (matched > 0) {
+    z = z / matched;
+  }
+
   const p = sigmoid(z);
-  return { scoreLogitSum: z, conversionProbability: p };
+
+  return {
+    scoreLogitSum: z,
+    conversionProbability: p,
+  };
 }
 
 /**
