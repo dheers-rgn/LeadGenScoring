@@ -37,6 +37,21 @@ export default function Dashboard({ user, onLogout }) {
     }
   }
 
+  async function runAggregations() {
+    setError("");
+    setStatus("Generating aggregates from CRM tables…");
+    setPreviewRows([]);
+    try {
+      const data = await apiPost("/api/aggregations/generate");
+      const total = (data.results || []).reduce((n, r) => n + (r.rowsInserted || 0), 0);
+      setStatus(`Aggregates done (${data.aggregateId}, ${total} rows).`);
+      await refreshTables();
+    } catch (e) {
+      setError(e.message);
+      setStatus("Failed.");
+    }
+  }
+
   async function loadPreview(name) {
     setSelected(name);
     setError("");
@@ -91,10 +106,13 @@ export default function Dashboard({ user, onLogout }) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px", flexWrap: "wrap", gap: "12px" }}>
           <div>
             <h1 style={{ margin: 0, fontSize: "22px", color: "#fff", fontWeight: 700 }}>Lead Scoring Dashboard</h1>
-            <div style={{ color: "rgba(255,255,255,0.55)", fontSize: "13px", marginTop: "4px" }}>Excel → MySQL importer &amp; data preview</div>
+            <div style={{ color: "rgba(255,255,255,0.55)", fontSize: "13px", marginTop: "4px" }}>
+              CRM aggregates (dr_contacts / dr_leads) or Excel import — then preview tables
+            </div>
           </div>
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <button onClick={runImport} style={btnStyle}>Run Import</button>
+            <button onClick={runAggregations} style={btnStyle}>Generate Aggregates</button>
+            <button onClick={runImport} style={{ ...btnStyle, background: "rgba(255,255,255,0.06)" }}>Run Excel Import</button>
             <button onClick={refreshTables} style={{ ...btnStyle, background: "rgba(255,255,255,0.06)" }}>Refresh Tables</button>
           </div>
         </div>
@@ -117,7 +135,7 @@ export default function Dashboard({ user, onLogout }) {
               Imported Tables
             </div>
             {tableOptions.length === 0 ? (
-              <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "13px" }}>No tables found. Run Import first.</div>
+              <div style={{ color: "rgba(255,255,255,0.45)", fontSize: "13px" }}>No tables found. Generate Aggregates or Run Excel Import first.</div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 {tableOptions.map((t) => (

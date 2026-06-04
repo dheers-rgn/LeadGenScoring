@@ -6,6 +6,7 @@ import { createPool, getDbConfigFromEnv } from "./db.js";
 import { runFullImport } from "./import/importExcels.js";
 import { buildAggregatedMlParams } from "./ml/buildAggregatedParams.js";
 import { scoreTrainingLeads } from "./ml/scoreTrainingLeads.js";
+import { runAllAggregations } from "./aggregations/generateAggregates.js";
 import {
   generateLeadEmails,
   startLeadEmailScheduler,
@@ -30,6 +31,15 @@ app.get("/api/health", async (_req, res) => {
     res.json({ ok: true, db: rows?.[0]?.ok === 1 });
   } catch (e) {
     res.status(500).json({ ok: false, error: e?.message || String(e) });
+  }
+});
+
+app.post("/api/aggregations/generate", async (_req, res) => {
+  try {
+    const { aggregateId, results } = await runAllAggregations(pool);
+    return res.json({ ok: true, aggregateId, results });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e?.message || String(e) });
   }
 });
 
