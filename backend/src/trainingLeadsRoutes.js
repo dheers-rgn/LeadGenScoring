@@ -15,7 +15,13 @@ export function trainingLeadsRoutes(pool) {
   // GET /api/training-leads/filter-options — distinct values for dropdowns
   router.get("/filter-options", async (_req, res) => {
     try {
-      const cols = ["country", "qualification", "lead_status", "lead_sub_status", "study_mode"];
+      const cols = [
+        "country",
+        "qualification",
+        "lead_status",
+        "lead_sub_status",
+        "study_mode",
+      ];
       const out = {};
       await Promise.all(
         cols.map(async (col) => {
@@ -31,15 +37,24 @@ export function trainingLeadsRoutes(pool) {
       );
       return res.json({ ok: true, ...out });
     } catch (e) {
-      return res.status(500).json({ ok: false, error: e?.message || String(e) });
+      return res
+        .status(500)
+        .json({ ok: false, error: e?.message || String(e) });
     }
   });
 
   // GET /api/training-leads — paginated list, ordered by conversion_probability DESC
   router.get("/", async (req, res) => {
+
     const page = Math.max(1, parseInt(String(req.query.page || "1"), 10) || 1);
-    const rawSize = parseInt(String(req.query.pageSize || String(DEFAULT_PAGE_SIZE)), 10);
-    const pageSize = Math.min(PAGE_SIZE_MAX, Math.max(1, Number.isFinite(rawSize) ? rawSize : DEFAULT_PAGE_SIZE));
+    const rawSize = parseInt(
+      String(req.query.pageSize || String(DEFAULT_PAGE_SIZE)),
+      10,
+    );
+    const pageSize = Math.min(
+      PAGE_SIZE_MAX,
+      Math.max(1, Number.isFinite(rawSize) ? rawSize : DEFAULT_PAGE_SIZE),
+    );
     const offset = (page - 1) * pageSize;
 
     const country = trimOrNull(req.query.country);
@@ -115,7 +130,9 @@ export function trainingLeadsRoutes(pool) {
         rows,
       });
     } catch (e) {
-      return res.status(500).json({ ok: false, error: e?.message || String(e) });
+      return res
+        .status(500)
+        .json({ ok: false, error: e?.message || String(e) });
     }
   });
 

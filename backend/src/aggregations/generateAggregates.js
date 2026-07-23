@@ -67,7 +67,7 @@ async function refreshAggregateTable(
   aggregateId,
   lastProcessedId,
 ) {
-  const [rows] = await pool.query(query, [lastProcessedId]);
+  const [rows] = await pool.query(query, [lastProcessedId, lastProcessedId]);
 
   // ✅ ADD HERE (DATA TRANSFORMATION LAYER)
   let processedRows = rows;
@@ -177,6 +177,7 @@ FROM dr_contacts C
 LEFT JOIN dr_mode_of_study M
     ON C.study_mode COLLATE utf8mb4_0900_ai_ci =
        CAST(M.id AS CHAR) COLLATE utf8mb4_0900_ai_ci
+WHERE C.id > ?
 GROUP BY studymode;
     `,
     mapRow: (r) => [r.max_date, r.count, r.studymode],
@@ -230,6 +231,7 @@ GROUP BY studymode;
       FROM dr_leads A
       LEFT JOIN dr_lead_status_master B ON A.lead_status = B.id
       LEFT JOIN dr_lead_sub_status_master C ON A.lead_sub_status = C.id
+      WHERE A.id > ?
       GROUP BY A.lead_status, A.lead_sub_status, B.status_name, C.sub_status_name
       ORDER BY B.id DESC, C.id DESC
     `,
@@ -250,7 +252,7 @@ GROUP BY studymode;
              R.remarks AS response
       FROM dr_lead_remarks R
       INNER JOIN dr_leads A ON R.lead_id = A.id
-      WHERE R.id > ?
+      WHERE A.contact_id > ?
       GROUP BY R.remarks
       ORDER BY count DESC
     `,
@@ -362,7 +364,7 @@ GROUP BY studymode;
              B.status_name AS status_name
       FROM dr_leads A
       LEFT JOIN dr_lead_status_master B ON A.lead_status = B.id
-      WHERE B.id > ? AND A.lead_status IN (${CONV_STATUS_SQL})
+      WHERE A.id > ? AND A.lead_status IN (${CONV_STATUS_SQL})
       GROUP BY A.lead_status, B.status_name
       ORDER BY leads_count DESC
     `,
@@ -386,7 +388,7 @@ GROUP BY studymode;
       FROM dr_leads A
       LEFT JOIN dr_lead_status_master B ON A.lead_status = B.id
       LEFT JOIN dr_lead_sub_status_master C ON A.lead_sub_status = C.id
-      WHERE B.id > ? AND A.lead_status IN (${CONV_STATUS_SQL})
+      WHERE A.contact_id > ? AND A.lead_status IN (${CONV_STATUS_SQL})
       GROUP BY A.lead_status, A.lead_sub_status, B.status_name, C.sub_status_name
       ORDER BY B.id DESC, C.id DESC
     `,
@@ -409,7 +411,7 @@ GROUP BY studymode;
       FROM dr_lead_remarks R
       INNER JOIN dr_leads A ON R.lead_id = A.id
       LEFT JOIN dr_lead_status_master B ON A.lead_status = B.id
-      WHERE B.id > ? AND A.lead_status IN (${CONV_STATUS_SQL}) AND R.id > ?
+      WHERE A.contact_id > ? AND A.lead_status IN (${CONV_STATUS_SQL})
       GROUP BY R.remarks, B.status_name
       ORDER BY count_remarks DESC
     `,

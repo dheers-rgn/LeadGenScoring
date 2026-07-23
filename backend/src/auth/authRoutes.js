@@ -25,13 +25,20 @@ export function authRoutes(pool) {
   router.post("/register", async (req, res) => {
     const { name, email, username, password, confirmPassword } = req.body ?? {};
     if (!name || !email || !username || !password) {
-      return res.status(400).json({ ok: false, error: "name, email, username and password are required." });
+      return res.status(400).json({
+        ok: false,
+        error: "name, email, username and password are required.",
+      });
     }
     if (password !== confirmPassword) {
-      return res.status(400).json({ ok: false, error: "Passwords do not match." });
+      return res
+        .status(400)
+        .json({ ok: false, error: "Passwords do not match." });
     }
     if (password.length < 8) {
-      return res.status(400).json({ ok: false, error: "Password must be at least 8 characters." });
+      return res
+        .status(400)
+        .json({ ok: false, error: "Password must be at least 8 characters." });
     }
     try {
       const [existing] = await pool.query(
@@ -39,17 +46,39 @@ export function authRoutes(pool) {
         [email.trim().toLowerCase(), username.trim().toLowerCase()],
       );
       if (existing.length) {
-        return res.status(409).json({ ok: false, error: "Email or username already registered." });
+        return res
+          .status(409)
+          .json({ ok: false, error: "Email or username already registered." });
       }
       const hash = await bcrypt.hash(password, SALT_ROUNDS);
       const [result] = await pool.query(
         "INSERT INTO users (name, email, username, password_hash) VALUES (?, ?, ?, ?)",
-        [name.trim(), email.trim().toLowerCase(), username.trim().toLowerCase(), hash],
+        [
+          name.trim(),
+          email.trim().toLowerCase(),
+          username.trim().toLowerCase(),
+          hash,
+        ],
       );
-      const user = { id: result.insertId, username: username.trim().toLowerCase(), email: email.trim().toLowerCase() };
-      return res.status(201).json({ ok: true, token: makeToken(user), user: { id: user.id, name: name.trim(), email: user.email, username: user.username } });
+      const user = {
+        id: result.insertId,
+        username: username.trim().toLowerCase(),
+        email: email.trim().toLowerCase(),
+      };
+      return res.status(201).json({
+        ok: true,
+        token: makeToken(user),
+        user: {
+          id: user.id,
+          name: name.trim(),
+          email: user.email,
+          username: user.username,
+        },
+      });
     } catch (e) {
-      return res.status(500).json({ ok: false, error: e?.message || String(e) });
+      return res
+        .status(500)
+        .json({ ok: false, error: e?.message || String(e) });
     }
   });
 
@@ -57,7 +86,10 @@ export function authRoutes(pool) {
   router.post("/login", async (req, res) => {
     const { login, password } = req.body ?? {};
     if (!login || !password) {
-      return res.status(400).json({ ok: false, error: "Login (email or username) and password are required." });
+      return res.status(400).json({
+        ok: false,
+        error: "Login (email or username) and password are required.",
+      });
     }
     try {
       const key = login.trim().toLowerCase();
@@ -65,17 +97,42 @@ export function authRoutes(pool) {
         "SELECT id, name, email, username, password_hash FROM users WHERE email = ? OR username = ? LIMIT 1",
         [key, key],
       );
+      console.log("Login attempt for:", key, "Found rows:", rows.length);
+      console.log(
+        "Login attempt for:",
+        key,
+        "Found rows:",
+        rows.length,
+        "Rows:",
+        rows,
+      );
       if (!rows.length) {
-        return res.status(401).json({ ok: false, error: "Invalid credentials." });
+        return res
+          .status(401)
+          .json({ ok: false, error: "Invalid credentials." });
       }
       const user = rows[0];
       const valid = await bcrypt.compare(password, user.password_hash);
       if (!valid) {
-        return res.status(401).json({ ok: false, error: "Invalid credentials." });
+        return res
+          .status(401)
+          .json({ ok: false, error: "Invalid credentials." });
       }
-      return res.json({ ok: true, token: makeToken(user), user: { id: user.id, name: user.name, email: user.email, username: user.username } });
+      return res.json({
+        ok: true,
+        token: makeToken(user),
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          username: user.username,
+        },
+      });
     } catch (e) {
-      return res.status(500).json({ ok: false, error: e?.message || String(e) });
+      console.error("Error during login:", e);
+      return res
+        .status(500)
+        .json({ ok: false, error: e?.message || String(e) });
     }
   });
 
@@ -92,7 +149,11 @@ export function authRoutes(pool) {
       );
       if (!rows.length) {
         // Don't reveal whether email exists
-        return res.json({ ok: true, message: "If that email is registered, a reset token has been generated." });
+        return res.json({
+          ok: true,
+          message:
+            "If that email is registered, a reset token has been generated.",
+        });
       }
       const token = crypto.randomBytes(32).toString("hex");
       const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
@@ -101,9 +162,15 @@ export function authRoutes(pool) {
         [token, expires, rows[0].id],
       );
       // In production send via email; for now return token in response for development use
-      return res.json({ ok: true, message: "Reset token generated.", resetToken: token });
+      return res.json({
+        ok: true,
+        message: "Reset token generated.",
+        resetToken: token,
+      });
     } catch (e) {
-      return res.status(500).json({ ok: false, error: e?.message || String(e) });
+      return res
+        .status(500)
+        .json({ ok: false, error: e?.message || String(e) });
     }
   });
 
@@ -111,13 +178,19 @@ export function authRoutes(pool) {
   router.post("/reset-password", async (req, res) => {
     const { resetToken, password, confirmPassword } = req.body ?? {};
     if (!resetToken || !password) {
-      return res.status(400).json({ ok: false, error: "resetToken and password are required." });
+      return res
+        .status(400)
+        .json({ ok: false, error: "resetToken and password are required." });
     }
     if (password !== confirmPassword) {
-      return res.status(400).json({ ok: false, error: "Passwords do not match." });
+      return res
+        .status(400)
+        .json({ ok: false, error: "Passwords do not match." });
     }
     if (password.length < 8) {
-      return res.status(400).json({ ok: false, error: "Password must be at least 8 characters." });
+      return res
+        .status(400)
+        .json({ ok: false, error: "Password must be at least 8 characters." });
     }
     try {
       const [rows] = await pool.query(
@@ -125,7 +198,9 @@ export function authRoutes(pool) {
         [resetToken],
       );
       if (!rows.length) {
-        return res.status(400).json({ ok: false, error: "Invalid or expired reset token." });
+        return res
+          .status(400)
+          .json({ ok: false, error: "Invalid or expired reset token." });
       }
       const hash = await bcrypt.hash(password, SALT_ROUNDS);
       await pool.query(
@@ -134,7 +209,9 @@ export function authRoutes(pool) {
       );
       return res.json({ ok: true, message: "Password updated successfully." });
     } catch (e) {
-      return res.status(500).json({ ok: false, error: e?.message || String(e) });
+      return res
+        .status(500)
+        .json({ ok: false, error: e?.message || String(e) });
     }
   });
 

@@ -1,4 +1,9 @@
-const LEAD_STATUS_FLOOR_VALUES = new Set(["lead", "re_enquired", "re-enquired", "reenquired"]);
+const LEAD_STATUS_FLOOR_VALUES = new Set([
+  "lead",
+  "re_enquired",
+  "re-enquired",
+  "reenquired",
+]);
 
 function norm(value) {
   return String(value ?? "")
@@ -66,8 +71,14 @@ async function ensureSchema(pool) {
   await ensureColumn("probability", "probability DOUBLE NOT NULL DEFAULT 0.5");
   await ensureColumn("score_logit", "score_logit DOUBLE NOT NULL DEFAULT 0");
   await ensureColumn("coefficient", "coefficient DOUBLE NOT NULL DEFAULT 0");
-  await ensureColumn("param_kind", "param_kind VARCHAR(32) NOT NULL DEFAULT 'category'");
-  await ensureColumn("reference_flag", "reference_flag TINYINT NOT NULL DEFAULT 0");
+  await ensureColumn(
+    "param_kind",
+    "param_kind VARCHAR(32) NOT NULL DEFAULT 'category'",
+  );
+  await ensureColumn(
+    "reference_flag",
+    "reference_flag TINYINT NOT NULL DEFAULT 0",
+  );
 }
 
 async function queryRows(pool, tableName) {
@@ -97,6 +108,9 @@ function upsertMax(map, key, raw) {
   const n = num(raw);
   if (!key || !Number.isFinite(n)) return;
   const prev = map.get(key) || 0;
+  // if (prev !== 0 && prev !== n) {
+  //   console.warn(`Inconsistent count for "${key}": saw ${prev} and ${n}, using max`);
+  // }
   map.set(key, Math.max(prev, n));
 }
 
@@ -221,23 +235,21 @@ export async function buildAggregatedMlParams(pool, env = process.env) {
   const featureMaps = await collectFeatureCounts(pool);
   const alpha = Number.parseFloat(env.ML_ALPHA || "1");
   const beta = Number.parseFloat(env.ML_BETA || "1");
-  const leadStatusFloor = Number.parseFloat(env.ML_LEAD_STATUS_FLOOR || "0.001");
+  const leadStatusFloor = Number.parseFloat(
+    env.ML_LEAD_STATUS_FLOOR || "0.001",
+  );
   const modelVersion = env.ML_MODEL_VERSION || makeVersion();
   const trainedAt = new Date();
 
   const rows = [];
 
   for (const [featureKey, maps] of Object.entries(featureMaps)) {
-    
     const values = new Set([...maps.all.keys(), ...maps.conv.keys()]);
     if (featureKey === "lead_status") {
       values.add("Lead");
       values.add("Re-enquired");
     }
-    console.log("FEATURE KEYS:", Object.keys(featureMaps));
-
     for (const value of values) {
-      console.log("FEATURE KEYS:", Object.keys(featureMaps));
       const allCount = maps.all.get(value) || 0;
       let convCount = maps.conv.get(value) || 0;
       let probability = (convCount + alpha) / (allCount + alpha + beta);
@@ -269,7 +281,10 @@ export async function buildAggregatedMlParams(pool, env = process.env) {
     }
   }
 
-  await pool.query(`DELETE FROM dr_ml_conversion_params WHERE model_version = ?`, [modelVersion]);
+  await pool.query(
+    `DELETE FROM dr_ml_conversion_params WHERE model_version = ?`,
+    [modelVersion],
+  );
   if (rows.length) {
     const sql = `INSERT INTO dr_ml_conversion_params
       (model_version, trained_at, feature_key, feature_value, param_kind, reference_flag, all_count, conv_count, alpha, beta, probability, score_logit, coefficient, notes)
@@ -282,4 +297,3 @@ export async function buildAggregatedMlParams(pool, env = process.env) {
 
   return { modelVersion, trainedAt, rowsInserted: rows.length };
 }
-

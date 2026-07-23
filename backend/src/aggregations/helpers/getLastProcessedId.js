@@ -11,7 +11,7 @@ export async function getLastProcessedId(pool) {
   return rows[0]?.last_contact_id || 0;
 }
 
-async function getLatestContactId(pool) {
+export async function getLatestContactId(pool) {
   const [rows] = await pool.query(`
     SELECT MAX(id) AS maxId
     FROM dr_contacts
@@ -31,6 +31,6 @@ export async function saveAggregationMetadata(
       (aggregate_id, last_contact_id)
       VALUES (?, ?)
     `,
-    [aggregateId, lastContactId]
+    [aggregateId, lastContactId],
   );
 }

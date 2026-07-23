@@ -21,80 +21,46 @@ export function clusterCities(rows) {
 
   let skipped = 0;
 
-//   for (const row of rows) {
-//     if (JSON.stringify(row).toLowerCase().includes("yandev")) {
-//     console.log("FOUND RAW ROW:", row);
-//   }
-//     const norm = normalizeCity(row.city);
+  for (const row of rows) {
+    const norm = normalizeCity(row.city);
 
-//     if (!norm) {
-//       skipped++;
-//       console.log("SKIPPED VALUE:", row.city);
-//       continue;
-//     }
+    if (!norm) {
+      skipped++;
+      continue;
+    }
 
-//     let match = clusters.find(c =>
-//       levenshtein.get(norm, c) <= 2 ||
-//       norm.startsWith(c + " ") ||
-//       c.startsWith(norm + " ")
-//     );
+    let match = clusters.find(c => {
+      const lenDiff = Math.abs(norm.length - c.length);
 
-//     if (!match) {
-//       match = norm;
-//       clusters.push(match);
-//     }
+      if (lenDiff > 3) return false;
 
-//     if (!merged[match]) {
-//       merged[match] = {
-//         city: match,
-//         count: 0,
-//       };
-//     }
+      const dist = levenshtein.get(norm, c);
 
-//     merged[match].count += Number(row.count || 0);
-//   }
+      // Dynamic threshold: 15% of the longer string length, capped at max 3
+      const pctThreshold = Math.floor(Math.max(norm.length, c.length) * 0.15);
+      const threshold = Math.max(1, Math.min(pctThreshold, 3));
 
-for (const row of rows) {
-  const norm = normalizeCity(row.city);
+      return (
+        dist <= threshold ||
+        norm.startsWith(c + " ") ||
+        c.startsWith(norm + " ")
+      );
+    });
 
-  if (!norm) {
-    skipped++;
-    continue;
+    if (!match) {
+      match = norm;
+      clusters.push(match);
+    }
+
+    if (!merged[match]) {
+      merged[match] = {
+        city: match,
+        count: 0,
+      };
+    }
+
+    merged[match].count += Number(row.count || 0);
   }
-
-let match = clusters.find(c => {
-  const lenDiff = Math.abs(norm.length - c.length);
-
-  if (lenDiff > 3) return false;
-
-  const dist = levenshtein.get(norm, c);
-
-  const threshold = Math.max(1, Math.floor(Math.max(norm.length, c.length) * 0.15));
-
-  return (
-    dist <= threshold ||
-    norm.startsWith(c + " ") ||
-    c.startsWith(norm + " ")
-  );
-});
-
-  if (!match) {
-    match = norm;
-    clusters.push(match);
-  }
-
-
-
-  if (!merged[match]) {
-    merged[match] = {
-      city: match,
-      count: 0,
-    };
-  }
-
-  merged[match].count += Number(row.count || 0);
-}
-
 
   return Object.values(merged);
 }
