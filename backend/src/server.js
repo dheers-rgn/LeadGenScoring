@@ -15,6 +15,7 @@ import {
 } from "./ml/generateLeadEmails.js";
 import { authRoutes } from "./auth/authRoutes.js";
 import { trainingLeadsRoutes } from "./trainingLeadsRoutes.js";
+import { loadTrainingLeads } from "./loadTrainingLeads.js";
 
 const app = express();
 app.use(cors());
@@ -38,6 +39,16 @@ app.post("/api/aggregations/generate", async (_req, res) => {
   try {
     const { aggregateId, results } = await runAllAggregations(pool);
     return res.json({ ok: true, aggregateId, results });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e?.message || String(e) });
+  }
+});
+
+app.post("/api/training-leads/load", async (req, res) => {
+  try {
+    const limit = req.body?.limit ?? req.query?.limit ?? 1000;
+    const result = await loadTrainingLeads(pool, Number(limit));
+    return res.json({ ok: true, ...result });
   } catch (e) {
     return res.status(500).json({ ok: false, error: e?.message || String(e) });
   }

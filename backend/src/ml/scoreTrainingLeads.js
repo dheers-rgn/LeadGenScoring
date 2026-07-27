@@ -82,6 +82,7 @@ async function loadLogitMaps(pool, modelVersion) {
     if (!nv) continue;
     maps.get(fk).set(nv, Number(r.score_logit));
   }
+  
   return maps;
 }
 
