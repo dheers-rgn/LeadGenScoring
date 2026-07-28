@@ -77,6 +77,8 @@ export default function LCPScreen({ onBack }) {
   const [previewRunning, setPreviewRunning] = useState(false);
   const [previewRows, setPreviewRows] = useState([]);
   const [emailModal, setEmailModal] = useState({ open: false, title: "", html: "" });
+  const [loadRunning, setLoadRunning] = useState(false);
+  const [scoreRunning, setScoreRunning] = useState(false);
 
   const loadOptions = useCallback(async () => {
     try {
@@ -128,6 +130,32 @@ export default function LCPScreen({ onBack }) {
   function setFilter(key, value) {
     setFilters((f) => ({ ...f, [key]: value }));
     setPage(1);
+  }
+
+  async function runLoadDataJob() {
+    setLoadRunning(true);
+    try {
+      const data= await apiPost("/api/training-leads/load");
+      await loadRows();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoadRunning(false);
+    }
+  }
+
+  async function runScoreLeadsJob() {
+    setScoreRunning(true);
+    setError("");
+    setStatus("Scoring leads...");
+    try {
+      const data = await apiPost("/api/ml/score-training-leads");
+      await loadRows();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setScoreRunning(false);
+    }
   }
 
   async function runMotivationMailJob() {
@@ -258,6 +286,42 @@ export default function LCPScreen({ onBack }) {
           }}
         >
           {mailJobRunning ? "Generating..." : "Generate Motivation Emails"}
+        </button>
+        <button
+          type="button"
+          onClick={runLoadDataJob}
+          disabled={loadRunning}
+          style={{
+            background: loadRunning ? "rgba(255,255,255,0.05)" : "rgba(245,196,0,0.18)",
+            border: "1px solid rgba(245,196,0,0.45)",
+            color: loadRunning ? "rgba(255,255,255,0.5)" : "#f5c400",
+            padding: "8px 15px",
+            borderRadius: "4px",
+            cursor: loadRunning ? "not-allowed" : "pointer",
+            fontSize: "13px",
+            fontWeight: 700,
+            fontFamily: "inherit",
+          }}
+        >
+          {loadRunning ? "Loading..." : "Load Data"}
+        </button>
+        <button
+          type="button"
+          onClick={runScoreLeadsJob}
+          disabled={scoreRunning}
+          style={{
+            background: scoreRunning ? "rgba(255,255,255,0.05)" : "rgba(245,196,0,0.18)",
+            border: "1px solid rgba(245,196,0,0.45)",
+            color: scoreRunning ? "rgba(255,255,255,0.5)" : "#f5c400",
+            padding: "8px 15px",
+            borderRadius: "4px",
+            cursor: scoreRunning ? "not-allowed" : "pointer",
+            fontSize: "13px",
+            fontWeight: 700,
+            fontFamily: "inherit",
+          }}
+        >
+          {scoreRunning ? "Scoring..." : "Score Leads"}
         </button>
         <button
           type="button"
