@@ -1,18 +1,19 @@
 /**
- * Load the latest 1000 unique contacts from the CRM source tables
+ * Load the latest 100 unique contacts from the CRM source tables
  * (dr_contacts, dr_leads, dr_lead_remarks, and related master tables)
  * into dr_training_leads.
  *
  * This module is intended to be called via POST /api/training-leads/load.
  *
  * The target table dr_training_leads is TRUNCATED first, then repopulated
- * with the freshest 1000 contact-level rows.
+ * with the freshest 100 contact-level rows.
  */
 
-const PAGE_SIZE_MAX = 1000;
+const PAGE_SIZE_MAX = 100;
 
 /**
  * Ensure the dr_training_leads table exists (idempotent CREATE TABLE).
+ * Also migrates the old typo column 'cousre_id' to 'course_id' if needed.
  */
 async function ensureTargetTable(pool) {
   await pool.query(`
@@ -26,6 +27,7 @@ async function ensureTargetTable(pool) {
       city TEXT NULL,
       country TEXT NULL,
       course TEXT NULL,
+      course_id INT NULL COMMENT 'reference only',
       qualification TEXT NULL,
       lead_status TEXT NULL,
       lead_sub_status TEXT NULL,
@@ -65,7 +67,7 @@ function getConvertedStatuses() {
  *  3. Join master tables for human-readable labels.
  *  4. Get the most recent remark for the lead.
  */
-async function fetchLatestContacts(pool, limit = 1000) {
+async function fetchLatestContacts(pool, limit = 100) {
   const sql = `
     SELECT
       C.id           AS contact_id,
@@ -82,6 +84,7 @@ async function fetchLatestContacts(pool, limit = 1000) {
       Remark.remarks AS remarks,
       COALESCE(Country.country, '')           AS country_name,
       COALESCE(Interest.interest_name, '')    AS course_name,
+      COALESCE(Interest.id, '')               AS course_id,
       COALESCE(HLQ.qualification_name, '')    AS qualification_name,
       COALESCE(Status.status_name, '')        AS lead_status_name,
       COALESCE(SubStatus.sub_status_name, '') AS lead_sub_status_name,
@@ -141,7 +144,7 @@ async function insertRows(pool, rows, chunkSize = 500) {
   const sql = `
     INSERT INTO dr_training_leads (
       contact_uuid, lead_id, name, email, mobile,
-      city, country, course, qualification,
+      city, country, course, course_id, qualification,
       lead_status, lead_sub_status, remarks, study_mode,
       converted, created_at
     ) VALUES ? ON DUPLICATE KEY UPDATE
@@ -152,6 +155,7 @@ async function insertRows(pool, rows, chunkSize = 500) {
       city        = VALUES(city),
       country     = VALUES(country),
       course      = VALUES(course),
+      course_id    = VALUES(course_id),
       qualification = VALUES(qualification),
       lead_status = VALUES(lead_status),
       lead_sub_status = VALUES(lead_sub_status),
@@ -177,6 +181,7 @@ async function insertRows(pool, rows, chunkSize = 500) {
         r.contact_city ?? null,
         r.country_name || null,
         r.course_name || null,
+        r.course_id || null,
         r.qualification_name || null,
         r.lead_status_name || null,
         r.lead_sub_status_name || null,
@@ -195,7 +200,7 @@ async function insertRows(pool, rows, chunkSize = 500) {
 }
 
 /**
- * Load the latest 1000 unique contacts into dr_training_leads.
+ * Load the latest 100 unique contacts into dr_training_leads.
  *
  * Steps:
  *  1. Ensure target table exists.
@@ -204,10 +209,10 @@ async function insertRows(pool, rows, chunkSize = 500) {
  *  4. Insert the new rows.
  *
  * @param {import("mysql2/promise").Pool} pool
- * @param {number} [limit=1000] - number of contacts to fetch
+ * @param {number} [limit=100] - number of contacts to fetch
  * @returns {{ rowsLoaded: number, limit: number }}
  */
-export async function loadTrainingLeads(pool, limit = 1000) {
+export async function loadTrainingLeads(pool, limit = 100) {
   const safeLimit = Math.min(Math.max(1, limit), PAGE_SIZE_MAX);
 
   await ensureTargetTable(pool);
@@ -221,3 +226,4 @@ export async function loadTrainingLeads(pool, limit = 1000) {
 
   return { rowsLoaded: rowsInserted, limit: safeLimit };
 }
+ 
