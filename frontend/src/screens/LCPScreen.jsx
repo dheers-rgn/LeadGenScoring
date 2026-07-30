@@ -21,6 +21,7 @@ const COLS = [
   { key: "score_logit_sum", label: "Score logit Σ", w: 100 },
   { key: "scored_at", label: "Scored at", w: 160 },
   { key: "email_actions", label: "Email", w: 120 },
+  { key: "summary_actions", label: "Summary", w: 120 },
 ];
 
 function pctFromProb(p) {
@@ -77,6 +78,12 @@ export default function LCPScreen({ onBack }) {
   const [previewRunning, setPreviewRunning] = useState(false);
   const [previewRows, setPreviewRows] = useState([]);
   const [emailModal, setEmailModal] = useState({ open: false, title: "", html: "" });
+  const [summaryModal, setSummaryModal] = useState({ open: false, title: "", summary: "", questions: [] });
+  const [profileJobStatus, setProfileJobStatus] = useState("");
+  const [profileJobRunning, setProfileJobRunning] = useState(false);
+  const [previewProfileStatus, setPreviewProfileStatus] = useState("");
+  const [previewProfileRunning, setPreviewProfileRunning] = useState(false);
+  const [previewProfileRows, setPreviewProfileRows] = useState([]);
   const [loadRunning, setLoadRunning] = useState(false);
   const [scoreRunning, setScoreRunning] = useState(false);
 
@@ -183,6 +190,77 @@ export default function LCPScreen({ onBack }) {
       setMailJobStatus("Mail job failed.");
     } finally {
       setMailJobRunning(false);
+    }
+  }
+
+  async function runProfileJob() {
+    setProfileJobRunning(true);
+    setError("");
+    setProfileJobStatus("Generating lead profiles...");
+    try {
+      const data = await apiPost("/api/ml/generate-lead-profiles", {
+        threshold: 0.2,
+      });
+      const hist = data.bedrockDiagnostics?.failureReasonHistogram;
+      const histStr = hist && Object.keys(hist).length ? ` Outcomes: ${JSON.stringify(hist)}.` : "";
+      const fail = data.bedrockDiagnostics?.firstBedrockFailure;
+      const failStr =
+        fail?.errorDetail != null
+          ? ` First Bedrock error: ${String(fail.errorDetail).slice(0, 200)}`
+          : "";
+      setProfileJobStatus(
+        `Profile job done: processed ${data.processed ?? 0} · Bedrock ${data.generatedByBedrock ?? 0} · template ${data.generatedByTemplate ?? 0} · other fallback ${data.generatedByOtherFallback ?? 0}.` +
+          ` IsProfileGenerated: 0=pending, 1=template, 2=bedrock, 3=bedrock failed→template.${histStr}${failStr}`,
+      );
+      await loadRows();
+    } catch (e) {
+      setError(e.message);
+      setProfileJobStatus("Profile job failed.");
+    } finally {
+      setProfileJobRunning(false);
+    }
+  }
+
+  async function runPreviewProfileJob() {
+    setPreviewProfileRunning(true);
+    setError("");
+    setPreviewProfileStatus("Generating preview profiles...");
+    try {
+      const data = await apiPost("/api/ml/generate-lead-profiles/preview", {
+        threshold: 0.2,
+        batchSize: 5,
+      });
+      const pRows = data.preview || [];
+      setPreviewProfileRows(pRows);
+      const hist = data.bedrockDiagnostics?.failureReasonHistogram;
+      const histStr = hist && Object.keys(hist).length ? ` Outcomes: ${JSON.stringify(hist)}.` : "";
+      const fail = data.bedrockDiagnostics?.firstBedrockFailure;
+      const failStr =
+        fail?.errorDetail != null
+          ? ` First Bedrock error: ${String(fail.errorDetail).slice(0, 200)}`
+          : "";
+      setPreviewProfileStatus(
+        `Preview done: ${pRows.length} profile(s). Each row includes bedrock.attempted / error in API JSON.${histStr}${failStr}`,
+      );
+      if (pRows.length > 0) {
+        const first = pRows[0];
+        let questions = [];
+        try {
+          const parsed = JSON.parse(first.targetingQuestions || "[]");
+          if (Array.isArray(parsed)) questions = parsed;
+        } catch {}
+        setSummaryModal({
+          open: true,
+          title: `Preview: ${first.name || first.email || `Lead #${first.id}`}`,
+          summary: first.profileSummary || "No summary generated.",
+          questions,
+        });
+      }
+    } catch (e) {
+      setError(e.message);
+      setPreviewProfileStatus("Preview failed.");
+    } finally {
+      setPreviewProfileRunning(false);
     }
   }
 
@@ -341,6 +419,42 @@ export default function LCPScreen({ onBack }) {
         >
           {previewRunning ? "Previewing..." : "Preview Emails"}
         </button>
+        <button
+          type="button"
+          onClick={runProfileJob}
+          disabled={profileJobRunning}
+          style={{
+            background: profileJobRunning ? "rgba(255,255,255,0.05)" : "rgba(100,200,255,0.15)",
+            border: "1px solid rgba(100,200,255,0.4)",
+            color: profileJobRunning ? "rgba(255,255,255,0.5)" : "#8cd4ff",
+            padding: "8px 15px",
+            borderRadius: "4px",
+            cursor: profileJobRunning ? "not-allowed" : "pointer",
+            fontSize: "13px",
+            fontWeight: 700,
+            fontFamily: "inherit",
+          }}
+        >
+          {profileJobRunning ? "Generating..." : "Generate Profiles"}
+        </button>
+        <button
+          type="button"
+          onClick={runPreviewProfileJob}
+          disabled={previewProfileRunning}
+          style={{
+            background: previewProfileRunning ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.1)",
+            border: "1px solid rgba(255,255,255,0.18)",
+            color: previewProfileRunning ? "rgba(255,255,255,0.5)" : "#fff",
+            padding: "8px 15px",
+            borderRadius: "4px",
+            cursor: previewProfileRunning ? "not-allowed" : "pointer",
+            fontSize: "13px",
+            fontWeight: 600,
+            fontFamily: "inherit",
+          }}
+        >
+          {previewProfileRunning ? "Previewing..." : "Preview Profiles"}
+        </button>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
@@ -356,6 +470,8 @@ export default function LCPScreen({ onBack }) {
         {error && <span style={{ color: "#ff8a80", fontSize: "13px" }}>{error}</span>}
         {mailJobStatus && <span style={{ color: "rgba(255,255,255,0.65)", fontSize: "13px" }}>{mailJobStatus}</span>}
         {previewStatus && <span style={{ color: "rgba(255,255,255,0.65)", fontSize: "13px" }}>{previewStatus}</span>}
+        {profileJobStatus && <span style={{ color: "rgba(100,200,255,0.8)", fontSize: "13px" }}>{profileJobStatus}</span>}
+        {previewProfileStatus && <span style={{ color: "rgba(100,200,255,0.8)", fontSize: "13px" }}>{previewProfileStatus}</span>}
       </div>
 
       {/* Filters */}
@@ -532,6 +648,41 @@ export default function LCPScreen({ onBack }) {
                         <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px" }}>—</span>
                       )}
                     </td>
+                    <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>
+                      {Number(r.IsProfileGenerated) > 0 && r.ProfileSummary ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            let questions = [];
+                            try {
+                              const parsed = JSON.parse(r.TargetingQuestions || "[]");
+                              if (Array.isArray(parsed)) questions = parsed;
+                            } catch {}
+                            setSummaryModal({
+                              open: true,
+                              title: `${r.name || r.email || `Lead #${r.id}`}`,
+                              summary: r.ProfileSummary,
+                              questions,
+                            });
+                          }}
+                          style={{
+                            background: "rgba(100,200,255,0.12)",
+                            border: "1px solid rgba(100,200,255,0.35)",
+                            color: "#8cd4ff",
+                            padding: "5px 10px",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            fontFamily: "inherit",
+                          }}
+                        >
+                          Show Summary
+                        </button>
+                      ) : (
+                        <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px" }}>—</span>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -555,6 +706,94 @@ export default function LCPScreen({ onBack }) {
       {previewRows.length > 0 && (
         <div style={{ marginTop: "10px", color: "rgba(255,255,255,0.55)", fontSize: "12px" }}>
           Preview records: {previewRows.map((p) => p.name || p.email || `#${p.id}`).join(", ")}
+        </div>
+      )}
+
+      {previewProfileRows.length > 0 && (
+        <div style={{ marginTop: "10px", color: "rgba(100,200,255,0.6)", fontSize: "12px" }}>
+          Profile preview records: {previewProfileRows.map((p) => p.name || p.email || `#${p.id}`).join(", ")}
+        </div>
+      )}
+
+      {summaryModal.open && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            zIndex: 1200,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+          onClick={() => setSummaryModal({ open: false, title: "", summary: "", questions: [] })}
+        >
+          <div
+            style={{
+              width: "min(800px, 95vw)",
+              maxHeight: "85vh",
+              overflowY: "auto",
+              background: "#fff",
+              color: "#111",
+              borderRadius: "8px",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.45)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                borderBottom: "1px solid #e7e7e7",
+                padding: "12px 14px",
+              }}
+            >
+              <strong>{summaryModal.title || "Profile Summary"}</strong>
+              <button
+                type="button"
+                onClick={() => setSummaryModal({ open: false, title: "", summary: "", questions: [] })}
+                style={{
+                  background: "transparent",
+                  border: "1px solid #c9c9c9",
+                  borderRadius: "4px",
+                  padding: "4px 8px",
+                  cursor: "pointer",
+                }}
+              >
+                Close
+              </button>
+            </div>
+            <div style={{ padding: "16px 18px" }}>
+              <h3 style={{ margin: "0 0 12px", fontSize: "15px", color: "#333" }}>Profile Summary</h3>
+              <div style={{ fontSize: "14px", lineHeight: "1.7", color: "#444", whiteSpace: "pre-wrap" }}>
+                {summaryModal.summary || "No summary available."}
+              </div>
+              {summaryModal.questions.length > 0 && (
+                <>
+                  <h3 style={{ margin: "20px 0 12px", fontSize: "15px", color: "#333" }}>
+                    Targeting Questions ({summaryModal.questions.length})
+                  </h3>
+                  <ol style={{ paddingLeft: "20px", margin: 0 }}>
+                    {summaryModal.questions.map((q, idx) => (
+                      <li
+                        key={idx}
+                        style={{
+                          fontSize: "14px",
+                          lineHeight: "1.6",
+                          color: "#444",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        {q}
+                      </li>
+                    ))}
+                  </ol>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

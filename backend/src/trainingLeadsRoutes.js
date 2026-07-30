@@ -112,6 +112,9 @@ export function trainingLeadsRoutes(pool) {
           study_mode,
           IsEmailGenerated,
           EmailHTML,
+          IsProfileGenerated,
+          ProfileSummary,
+          TargetingQuestions,
           score_logit_sum,
           scored_at
         FROM dr_training_leads

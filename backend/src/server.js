@@ -13,6 +13,10 @@ import {
   getBedrockEnvSnapshot,
   checkBedrockSdkLoadable,
 } from "./ml/generateLeadEmails.js";
+import {
+  generateLeadProfiles,
+  startLeadProfileScheduler,
+} from "./ml/generateLeadProfile.js";
 import { authRoutes } from "./auth/authRoutes.js";
 import { trainingLeadsRoutes } from "./trainingLeadsRoutes.js";
 import { loadTrainingLeads } from "./loadTrainingLeads.js";
@@ -154,6 +158,35 @@ app.post("/api/ml/generate-lead-emails/preview", async (req, res) => {
   }
 });
 
+app.post("/api/ml/generate-lead-profiles", async (req, res) => {
+  try {
+    const threshold = req.body?.threshold ?? req.query?.threshold;
+    const batchSize = req.body?.batchSize ?? req.query?.batchSize;
+    const result = await generateLeadProfiles(pool, process.env, {
+      threshold: threshold != null ? Number(threshold) : undefined,
+      batchSize: batchSize != null ? Number(batchSize) : undefined,
+    });
+    return res.json({ ok: true, ...result });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e?.message || String(e) });
+  }
+});
+
+app.post("/api/ml/generate-lead-profiles/preview", async (req, res) => {
+  try {
+    const threshold = req.body?.threshold ?? req.query?.threshold;
+    const batchSize = req.body?.batchSize ?? req.query?.batchSize ?? 10;
+    const result = await generateLeadProfiles(pool, process.env, {
+      dryRun: true,
+      threshold: threshold != null ? Number(threshold) : undefined,
+      batchSize: batchSize != null ? Number(batchSize) : undefined,
+    });
+    return res.json({ ok: true, ...result });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e?.message || String(e) });
+  }
+});
+
 /** Read-only: verify Bedrock env + whether @aws-sdk/client-bedrock-runtime loads (no invoke). */
 app.get("/api/ml/bedrock-email-env", async (_req, res) => {
   try {
@@ -206,4 +239,5 @@ app.listen(port, () => {
 });
 
 startLeadEmailScheduler(pool, process.env);
+startLeadProfileScheduler(pool, process.env);
 
