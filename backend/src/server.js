@@ -20,6 +20,7 @@ import {
 import { authRoutes } from "./auth/authRoutes.js";
 import { trainingLeadsRoutes } from "./trainingLeadsRoutes.js";
 import { loadTrainingLeads } from "./loadTrainingLeads.js";
+import {migrateContacts}  from "./dbMigration/migration.js";
 
 const app = express();
 app.use(cors());
@@ -36,6 +37,20 @@ app.get("/api/health", async (_req, res) => {
     res.json({ ok: true, db: rows?.[0]?.ok === 1 });
   } catch (e) {
     res.status(500).json({ ok: false, error: e?.message || String(e) });
+  }
+});
+
+app.post("/contactsMigration", async (req, res) => {
+  try {
+    const result = await migrateContacts();
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Migration failed",
+      error: error.message,
+    });
   }
 });
 
@@ -215,7 +230,8 @@ app.get("/api/ml/params", async (req, res) => {
          ORDER BY trained_at DESC
          LIMIT 1`,
       );
-      if (!vrows.length) return res.json({ ok: true, modelVersion: null, params: [] });
+      if (!vrows.length)
+        return res.json({ ok: true, modelVersion: null, params: [] });
       targetVersion = vrows[0].model_version;
     }
 
@@ -226,6 +242,8 @@ app.get("/api/ml/params", async (req, res) => {
        ORDER BY feature_key, probability DESC`,
       [targetVersion],
     );
+
+    console.log(rows);
     return res.json({ ok: true, modelVersion: targetVersion, params: rows });
   } catch (e) {
     return res.status(500).json({ ok: false, error: e?.message || String(e) });
@@ -240,4 +258,3 @@ app.listen(port, () => {
 
 startLeadEmailScheduler(pool, process.env);
 startLeadProfileScheduler(pool, process.env);
-
