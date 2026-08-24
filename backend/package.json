@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "import": "node src/import/cli.js"
+    "import": "node src/import/cli.js",
+    "regenerate:profiles": "node src/regenerateLeadProfiles.js"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.758.0",

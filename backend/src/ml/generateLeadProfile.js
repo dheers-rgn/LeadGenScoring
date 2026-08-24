@@ -176,7 +176,7 @@ function buildQualificationStudyModeParagraph(lead) {
 }
 
 /**
- * Fallback template that generates a plain-text summary and 10 targeting questions
+ * Fallback template that generates a plain-text summary and 5 targeting Q&A pairs
  * when Bedrock is not available.
  */
 function fallbackProfileContent(lead, factors) {
@@ -206,25 +206,68 @@ function fallbackProfileContent(lead, factors) {
   }
   const summary = summaryParts.join(" ");
 
-  // Build 10 targeting questions
-  const questions = [
-    `What specific goals or outcomes are you hoping to achieve by completing ${escapeHtml(course)}?`,
-    `What is your current employment status, and how does ${escapeHtml(course)} fit into your career plans?`,
-    `Do you have any prior experience or knowledge in the field related to ${escapeHtml(course)}?`,
-    `What is your preferred timeline for starting and completing ${escapeHtml(course)}?`,
-    `Are there any specific challenges or concerns you have about pursuing ${escapeHtml(course)} at this time?`,
-    `How did you hear about our programmes, and what factors influenced your interest in ${escapeHtml(course)}?`,
-    `What support or resources would help you feel more confident about enrolling in ${escapeHtml(course)}?`,
-    `Are you considering other institutions or programmes alongside this one?`,
-    `What is your preferred method of communication and frequency for receiving updates about ${escapeHtml(course)}?`,
-    `Is there anything else you would like us to know about your background or circumstances that could help us support you better?`,
-  ];
+  // Escaped profile values used to personalise the targeting questions.
+  const ec = escapeHtml(course);
+  const eqq = hasText(qualification) ? escapeHtml(qualification) : "";
+  const esm = hasText(studyMode) ? escapeHtml(studyMode) : "";
+  const er = regionBits ? escapeHtml(regionBits) : "";
+  const ecntry = hasText(country) ? escapeHtml(country) : "";
+  const ecity = hasText(city) ? escapeHtml(city) : "";
+
+  // Build 5 quality targeting Q&A pairs (question + suggested answer guard), each
+  // personalised to the applicant's actual qualification, study mode, and location.
+  const questions = [];
+  questions.push({
+    question: eqq
+      ? `How do you hope completing ${ec} will build directly on your background in ${eqq}, and what career step are you aiming for next?`
+      : `What career goal or outcome would you most want ${ec} to unlock, and what timeline are you working toward?`,
+    answer: eqq
+      ? `A direct link between their existing ${eqq} experience and the course outcome signals a realistic, ready-to-act candidate. If they describe a concrete next role or promotion, urgency is high.`
+      : `Listen for a specific target role (career change, promotion, or new skill) and a rough start date. A named goal plus a deadline points to genuine intent to enrol.`,
+  });
+
+  questions.push({
+    question: eqq
+      ? `Which parts of your ${eqq} background do you feel are most relevant to ${ec}, and where do you see the biggest gap you want this course to close?`
+      : `What prior experience or self-driven learning do you already have that relates to ${ec}, and what gap do you most want to fill?`,
+    answer: eqq
+      ? `Look for how far their qualification already covers the course content. The clearer they are about a gap, the more specific your follow-up can be on how the course bridges it.`
+      : `Relevant work history, projects, or self-study makes early progress easier. Probe how close they already are so you can show an achievable path through the course.`,
+  });
+
+  questions.push({
+    question: esm
+      ? `With a ${esm} study format in mind, what schedule or outside commitments might make it harder for you to begin ${ec} soon?`
+      : `What work, family, or study commitments could affect when you would realistically start and finish ${ec}?`,
+    answer: esm
+      ? `Probe for workload and timetable fit. A clear, practical schedule for a ${esm} format signals they can keep momentum; flag any stated conflict as the main obstacle to a start date.`
+      : `Surface the practical blockers. Naming the single biggest constraint early gives the advisor a concrete objection to address before asking for commitment.`,
+  });
+
+  questions.push({
+    question: ecntry || ecity
+      ? `How do you picture using ${ec} to open up opportunities where you are based${er ? ` in ${er}` : ""}?`
+      : `What does your longer-term plan look like, and how does ${ec} support the next move you want to make?`,
+    answer: ecntry || ecity
+      ? `A local, concrete link between the course and real roles in their area indicates follow-through intent. Ask what a successful outcome would look like for them there.`
+      : `Probe for the specific next step they want and how the course fits it. A clear plan of action is a strong sign they will convert.`,
+  });
+
+  questions.push({
+    question: esm
+      ? `What support or guidance would help you feel confident committing to a ${esm} pace of ${ec}, and what is the main decision left before you enrol?`
+      : `What support or guidance would help you feel confident enrolling in ${ec}, and what is the main decision still on your mind?`,
+    answer: esm
+      ? `What they ask for reveals the remaining friction. Confirm the study schedule, who they can reach for help, and a named next step with a point of contact to move them to enrolment.`
+      : `Their requested help identifies what would remove the last obstacle. Set a clear next step, confirm preferred contact, and assign a named point of contact.`,
+  });
 
   return {
     summary,
     questions,
   };
 }
+
 
 function buildPrompt(lead, factors) {
   const firstName = parseFirstName(lead.name);
@@ -236,10 +279,11 @@ function buildPrompt(lead, factors) {
     "",
     'Section 1 \u2014 "summary": A concise natural-language profile summary (2\u20133 paragraphs) describing who this person is, their background, what they are looking for, and key observations about their fit for the course. Do NOT use the words "lead" or "leads". Use "applicant", "candidate", "learner", or similar. Do NOT mention model, training data, probability, percentage, or any numeric statistics.',
     "",
-    'Section 2 \u2014 "questions": An array of exactly 10 thoughtful, open-ended targeting questions that an admissions advisor would ask to better understand this applicant\u2019s motivations, constraints, timeline, and needs. The questions should be specific to the applicant\u2019s profile (course, location, background, study mode) \u2014 not generic. Each question should help qualify the lead more effectively.',
+    'Section 2 \u2014 "questions": An array of exactly 5 thoughtful, open-ended targeting question-and-answer pairs an admissions advisor would use to qualify this applicant. Each item is a JSON object with a "question" (the exact question to ask) and an "answer" (a short suggested/expected response guide describing what a strong applicant reply reveals and how the advisor should read it). The questions must be specific to the applicant\u2019s profile (course, location, background, study mode) and focus on the highest-value signals: motivation, urgency, readiness, and constraints. Do not use generic questions.',
     "",
     "CRITICAL formatting rules:",
-    'Output ONLY a JSON object with keys "summary" (string) and "questions" (array of 10 strings).',
+    'Output ONLY a JSON object with keys "summary" (string) and "questions" (array of exactly 5 objects, each with a "question" string and an "answer" string).',
+    "The 'answer' for each question is the suggested/expected response guide for the advisor: what a strong applicant response would reveal about motivation, timeline, urgency, readiness, or constraints, and what to probe next. Keep every answer short (1\u20133 sentences) and plain text.",
     "Do NOT wrap in markdown code fences or any other formatting.",
     "Do NOT include any text before or after the JSON object.",
     "The summary must be plain text (no HTML).",
@@ -353,7 +397,7 @@ async function ensureProfileColumns(pool) {
   );
   await ensureColumn(
     "TargetingQuestions",
-    "TargetingQuestions TEXT NULL COMMENT 'JSON array of 10 targeting questions generated by Bedrock or template'",
+    "TargetingQuestions TEXT NULL COMMENT 'JSON array of 5 targeting question-and-answer pairs generated by Bedrock or template'",
   );
   await ensureColumn(
     "IsProfileGenerated",
@@ -527,13 +571,33 @@ async function tryBedrockProfile(env, prompt) {
         meta: { ...snap, sdkLoaded: true },
       };
     }
-    if (!Array.isArray(parsed.questions) || parsed.questions.length !== 10) {
+    if (!Array.isArray(parsed.questions) || parsed.questions.length !== 5) {
       return {
         ok: false,
         content: null,
         attempted: true,
         error: "invalid_structure",
-        errorDetail: `Response JSON 'questions' must be an array of exactly 10 items, got ${parsed.questions?.length ?? 0}`,
+        errorDetail: `Response JSON 'questions' must be an array of exactly 5 items, got ${parsed.questions?.length ?? 0}`,
+        meta: { ...snap, sdkLoaded: true },
+      };
+    }
+    if (
+      !parsed.questions.every(
+        (item) =>
+          item &&
+          typeof item.question === "string" &&
+          item.question.trim() &&
+          typeof item.answer === "string" &&
+          item.answer.trim(),
+      )
+    ) {
+      return {
+        ok: false,
+        content: null,
+        attempted: true,
+        error: "invalid_structure",
+        errorDetail:
+          "Response JSON 'questions' items must be objects with non-empty 'question' and 'answer' string fields",
         meta: { ...snap, sdkLoaded: true },
       };
     }
