@@ -776,19 +776,37 @@ export default function LCPScreen({ onBack }) {
                     Targeting Questions ({summaryModal.questions.length})
                   </h3>
                   <ol style={{ paddingLeft: "20px", margin: 0 }}>
-                    {summaryModal.questions.map((q, idx) => (
-                      <li
-                        key={idx}
-                        style={{
-                          fontSize: "14px",
-                          lineHeight: "1.6",
-                          color: "#444",
-                          marginBottom: "8px",
-                        }}
-                      >
-                        {q}
-                      </li>
-                    ))}
+                    {summaryModal.questions.map((item, idx) => {
+                      const question =
+                        typeof item === "string" ? item : item && item.question;
+                      const answer =
+                        typeof item === "object" && item && item.answer ? item.answer : "";
+                      return (
+                        <li
+                          key={idx}
+                          style={{
+                            fontSize: "14px",
+                            lineHeight: "1.6",
+                            color: "#444",
+                            marginBottom: "12px",
+                          }}
+                        >
+                          {question}
+                          {answer && (
+                            <div
+                              style={{
+                                fontSize: "13px",
+                                lineHeight: "1.5",
+                                color: "#777",
+                                marginTop: "2px",
+                              }}
+                            >
+                              <em>Suggested answer:</em> {answer}
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ol>
                 </>
               )}
