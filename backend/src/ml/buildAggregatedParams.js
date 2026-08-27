@@ -231,8 +231,24 @@ async function collectFeatureCounts(pool) {
 }
 
 export async function buildAggregatedMlParams(pool, env = process.env) {
+
+  console.log("[ML BUILD] Starting buildAggregatedMlParams");
+
   await ensureSchema(pool);
   const featureMaps = await collectFeatureCounts(pool);
+
+  console.log(
+    "[ML BUILD] Feature counts:",
+    Object.fromEntries(
+      Object.entries(featureMaps).map(([key, maps]) => [
+        key,
+        {
+          all: maps.all.size,
+          conv: maps.conv.size,
+        },
+      ]),
+    ),
+  );
   const alpha = Number.parseFloat(env.ML_ALPHA || "1");
   const beta = Number.parseFloat(env.ML_BETA || "1");
   const leadStatusFloor = Number.parseFloat(
@@ -285,6 +301,10 @@ export async function buildAggregatedMlParams(pool, env = process.env) {
     `DELETE FROM dr_ml_conversion_params WHERE model_version = ?`,
     [modelVersion],
   );
+
+  console.log("[ML BUILD] Rows to insert:", rows.length);
+console.log("[ML BUILD] Model version:", modelVersion);
+
   if (rows.length) {
     const sql = `INSERT INTO dr_ml_conversion_params
       (model_version, trained_at, feature_key, feature_value, param_kind, reference_flag, all_count, conv_count, alpha, beta, probability, score_logit, coefficient, notes)
@@ -295,5 +315,8 @@ export async function buildAggregatedMlParams(pool, env = process.env) {
     }
   }
 
+  console.log("[ML BUILD] Insert completed:", rows.length);
+
   return { modelVersion, trainedAt, rowsInserted: rows.length };
 }
+ 

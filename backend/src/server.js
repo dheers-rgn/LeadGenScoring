@@ -39,12 +39,25 @@ app.get("/api/health", async (_req, res) => {
   }
 });
 
-app.post("/api/aggregations/generate", async (_req, res) => {
+app.post("/api/aggregations/generate", async (req, res) => {
   try {
-    const { aggregateId, results } = await runAllAggregations(pool);
-    return res.json({ ok: true, aggregateId, results });
+    const fullRefresh =
+      req.body?.fullRefresh ?? req.query?.fullRefresh ?? false;
+
+    const result = await runAllAggregations(pool, {
+      fullRefresh:
+        fullRefresh === true || String(fullRefresh).toLowerCase() === "true",
+    });
+
+    return res.json({
+      ok: true,
+      ...result,
+    });
   } catch (e) {
-    return res.status(500).json({ ok: false, error: e?.message || String(e) });
+    return res.status(500).json({
+      ok: false,
+      error: e?.message || String(e),
+    });
   }
 });
 
@@ -215,7 +228,8 @@ app.get("/api/ml/params", async (req, res) => {
          ORDER BY trained_at DESC
          LIMIT 1`,
       );
-      if (!vrows.length) return res.json({ ok: true, modelVersion: null, params: [] });
+      if (!vrows.length)
+        return res.json({ ok: true, modelVersion: null, params: [] });
       targetVersion = vrows[0].model_version;
     }
 
@@ -240,4 +254,3 @@ app.listen(port, () => {
 
 startLeadEmailScheduler(pool, process.env);
 startLeadProfileScheduler(pool, process.env);
-
