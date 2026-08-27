@@ -1,4 +1,10 @@
-const EMAIL_FEATURE_KEYS = ["city", "country", "course", "qualification", "study_mode"];
+const EMAIL_FEATURE_KEYS = [
+  "city",
+  "country",
+  "course",
+  "qualification",
+  "study_mode",
+];
 const DEFAULT_THRESHOLD = 0.2;
 const DEFAULT_BATCH_SIZE = 100;
 
@@ -32,8 +38,12 @@ function parseFirstName(fullName) {
 }
 
 function resolveBedrockModelId(env) {
-  const direct = String(env.BEDROCK_MODEL_ID || env.BEDROCK_INFERENCE_PROFILE_ARN || env.BEDROCK_INFERENCE_PROFILE_ID || "")
-    .trim();
+  const direct = String(
+    env.BEDROCK_MODEL_ID ||
+      env.BEDROCK_INFERENCE_PROFILE_ARN ||
+      env.BEDROCK_INFERENCE_PROFILE_ID ||
+      "",
+  ).trim();
   if (direct) return direct;
   return parseAvailableModelId(env.AVAILABLE_MODELS);
 }
@@ -45,7 +55,9 @@ export function getBedrockEnvSnapshot(env = process.env) {
   return {
     awsRegion,
     resolvedModelId,
-    explicitAwsKeysSet: Boolean(env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY),
+    explicitAwsKeysSet: Boolean(
+      env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY,
+    ),
   };
 }
 
@@ -66,7 +78,9 @@ function parseAvailableModelId(rawValue) {
     const parsed = JSON.parse(raw);
     if (typeof parsed === "string") return parsed.trim();
     if (parsed && typeof parsed === "object") {
-      const first = Object.values(parsed).find((v) => typeof v === "string" && v.trim());
+      const first = Object.values(parsed).find(
+        (v) => typeof v === "string" && v.trim(),
+      );
       if (first) return first.trim();
     }
   } catch {
@@ -75,7 +89,10 @@ function parseAvailableModelId(rawValue) {
   const cleaned = raw;
   const eqIdx = cleaned.indexOf("=");
   if (eqIdx >= 0 && eqIdx < cleaned.length - 1) {
-    return cleaned.slice(eqIdx + 1).trim().replace(/^['"]|['"]$/g, "");
+    return cleaned
+      .slice(eqIdx + 1)
+      .trim()
+      .replace(/^['"]|['"]$/g, "");
   }
   return cleaned;
 }
@@ -100,7 +117,8 @@ function parseTemperature(env) {
  */
 function parseMaxTokens(env) {
   const capRaw = envNum(env, "BEDROCK_MAX_TOKENS_CAP");
-  const hardCap = Number.isFinite(capRaw) && capRaw > 0 ? Math.floor(capRaw) : 2047;
+  const hardCap =
+    Number.isFinite(capRaw) && capRaw > 0 ? Math.floor(capRaw) : 2047;
   const n = envNum(env, "BEDROCK_MAX_TOKENS");
   if (Number.isFinite(n) && n > 0) return Math.min(Math.floor(n), hardCap);
   return Math.min(2000, hardCap);
@@ -108,7 +126,10 @@ function parseMaxTokens(env) {
 
 function extractResponseText(result) {
   const blocks = result?.output?.message?.content || [];
-  return blocks.map((b) => b?.text || "").join("\n").trim();
+  return blocks
+    .map((b) => b?.text || "")
+    .join("\n")
+    .trim();
 }
 
 function hasText(v) {
@@ -125,7 +146,9 @@ function inferStrength(p) {
 }
 
 function buildFactorInferenceNarrative(factors, courseRaw) {
-  const course = hasText(courseRaw) ? String(courseRaw).trim() : "this programme";
+  const course = hasText(courseRaw)
+    ? String(courseRaw).trim()
+    : "this programme";
   const ec = escapeHtml(course);
   const parts = [];
   for (const f of factors) {
@@ -165,7 +188,9 @@ function buildFactorInferenceNarrative(factors, courseRaw) {
 }
 
 function buildQualificationStudyModeParagraph(lead) {
-  const q = hasText(lead.qualification) ? String(lead.qualification).trim() : "";
+  const q = hasText(lead.qualification)
+    ? String(lead.qualification).trim()
+    : "";
   const sm = hasText(lead.study_mode) ? String(lead.study_mode).trim() : "";
   if (!q && !sm) {
     return `<p>We can help you map the next practical steps for <strong>${escapeHtml(String(lead.course || "this programme").trim() || "this programme")}</strong> once we understand your preferred pace and schedule in a short follow-up.</p>`;
@@ -183,7 +208,9 @@ function fallbackEmailHtml(lead, factors) {
   const firstName = escapeHtml(parseFirstName(lead.name));
   const city = hasText(lead.city) ? String(lead.city).trim() : "";
   const country = hasText(lead.country) ? String(lead.country).trim() : "";
-  const course = hasText(lead.course) ? String(lead.course).trim() : "this programme";
+  const course = hasText(lead.course)
+    ? String(lead.course).trim()
+    : "this programme";
   const regionBits = [city, country].filter(Boolean).join(", ");
   const regionSentence = regionBits
     ? `Many applicants from <strong>${escapeHtml(regionBits)}</strong> pursue programmes like this, and we see strong engagement when they stay consistent through the application steps.`
@@ -213,6 +240,8 @@ function fallbackEmailHtml(lead, factors) {
 async function columnExists(pool, tableName, columnName) {
   const [dbRows] = await pool.query(`SELECT DATABASE() AS db_name`);
   const dbName = dbRows[0]?.db_name;
+  console.log("dbName: ", dbName);
+
   if (!dbName) return false;
   const [rows] = await pool.query(
     `SELECT COUNT(*) AS c
@@ -234,9 +263,21 @@ async function ensureEmailGenerationLookup(pool) {
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
   `);
   const rows = [
-    [EMAIL_GEN_PENDING, "Pending", "Not yet generated; eligible when conversion probability > threshold and latest model version"],
-    [EMAIL_GEN_TEMPLATE, "Template", "Email HTML generated using the built-in template (Bedrock not used or not configured)"],
-    [EMAIL_GEN_BEDROCK, "Bedrock", "Email HTML generated using the configured AWS Bedrock model"],
+    [
+      EMAIL_GEN_PENDING,
+      "Pending",
+      "Not yet generated; eligible when conversion probability > threshold and latest model version",
+    ],
+    [
+      EMAIL_GEN_TEMPLATE,
+      "Template",
+      "Email HTML generated using the built-in template (Bedrock not used or not configured)",
+    ],
+    [
+      EMAIL_GEN_BEDROCK,
+      "Bedrock",
+      "Email HTML generated using the configured AWS Bedrock model",
+    ],
     [
       EMAIL_GEN_OTHER_FALLBACK,
       "Other fallback",
@@ -266,7 +307,9 @@ async function ensureEmailHtmlColumn(pool) {
     [dbName],
   );
   if (Number(rows[0]?.c || 0) === 0) {
-    await pool.query(`ALTER TABLE dr_training_leads ADD COLUMN EmailHTML LONGTEXT NULL`);
+    await pool.query(
+      `ALTER TABLE dr_training_leads ADD COLUMN EmailHTML LONGTEXT NULL`,
+    );
   }
 }
 
@@ -274,15 +317,25 @@ async function ensureEmailHtmlColumn(pool) {
  * IsEmailGenerated (0–3) + migrate legacy IsMailGenerated; reset all to 0 when migrating from boolean column.
  */
 async function ensureIsEmailGeneratedColumn(pool) {
-  const hasNew = await columnExists(pool, "dr_training_leads", "IsEmailGenerated");
-  const hasOld = await columnExists(pool, "dr_training_leads", "IsMailGenerated");
+  const hasNew = await columnExists(
+    pool,
+    "dr_training_leads",
+    "IsEmailGenerated",
+  );
+  const hasOld = await columnExists(
+    pool,
+    "dr_training_leads",
+    "IsMailGenerated",
+  );
 
   if (!hasNew && hasOld) {
     await pool.query(
       `ALTER TABLE dr_training_leads ADD COLUMN IsEmailGenerated TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'dr_email_generation_status.code'`,
     );
     await pool.query(`UPDATE dr_training_leads SET IsEmailGenerated = 0`);
-    await pool.query(`ALTER TABLE dr_training_leads DROP COLUMN IsMailGenerated`);
+    await pool.query(
+      `ALTER TABLE dr_training_leads DROP COLUMN IsMailGenerated`,
+    );
     return;
   }
 
@@ -295,7 +348,9 @@ async function ensureIsEmailGeneratedColumn(pool) {
 
   if (hasOld) {
     await pool.query(`UPDATE dr_training_leads SET IsEmailGenerated = 0`);
-    await pool.query(`ALTER TABLE dr_training_leads DROP COLUMN IsMailGenerated`);
+    await pool.query(
+      `ALTER TABLE dr_training_leads DROP COLUMN IsMailGenerated`,
+    );
   }
 }
 
@@ -313,7 +368,9 @@ async function resolveLatestModelVersion(pool) {
      LIMIT 1`,
   );
   if (!rows.length) {
-    throw new Error("No rows in dr_ml_conversion_params; run build/score jobs first.");
+    throw new Error(
+      "No rows in dr_ml_conversion_params; run build/score jobs first.",
+    );
   }
   return rows[0].model_version;
 }
@@ -353,8 +410,10 @@ function getLeadFactors(lead, statMap) {
     const hit = statMap.get(p.feature)?.get(norm(p.value));
     return {
       ...p,
-      scoreLogit: hit && Number.isFinite(hit.scoreLogit) ? hit.scoreLogit : null,
-      probability: hit && Number.isFinite(hit.probability) ? hit.probability : null,
+      scoreLogit:
+        hit && Number.isFinite(hit.scoreLogit) ? hit.scoreLogit : null,
+      probability:
+        hit && Number.isFinite(hit.probability) ? hit.probability : null,
     };
   });
 }
@@ -455,7 +514,9 @@ async function tryBedrockHtml(env, prompt) {
       html: "",
       attempted: false,
       error: "missing_region_or_model",
-      errorDetail: !region ? "AWS_REGION is empty" : "BEDROCK_MODEL_ID and AVAILABLE_MODELS did not yield a model id",
+      errorDetail: !region
+        ? "AWS_REGION is empty"
+        : "BEDROCK_MODEL_ID and AVAILABLE_MODELS did not yield a model id",
       meta: { ...snap, sdkLoaded: true },
     };
   }
@@ -492,7 +553,14 @@ async function tryBedrockHtml(env, prompt) {
         meta: { ...snap, sdkLoaded: true },
       };
     }
-    return { ok: true, html, attempted: true, error: null, errorDetail: null, meta: { ...snap, sdkLoaded: true } };
+    return {
+      ok: true,
+      html,
+      attempted: true,
+      error: null,
+      errorDetail: null,
+      meta: { ...snap, sdkLoaded: true },
+    };
   } catch (e) {
     return {
       ok: false,
@@ -518,7 +586,11 @@ const IS_EMAIL_GENERATED_LEGEND = {
   3: "Other fallback — Bedrock was invoked but failed or returned empty; template HTML was used",
 };
 
-export async function generateLeadEmails(pool, env = process.env, options = {}) {
+export async function generateLeadEmails(
+  pool,
+  env = process.env,
+  options = {},
+) {
   if (isRunning) {
     return {
       skipped: true,
@@ -531,7 +603,10 @@ export async function generateLeadEmails(pool, env = process.env, options = {}) 
     await ensureEmailSchema(pool);
     const modelVersion = await resolveLatestModelVersion(pool);
     const threshold = Number(options.threshold ?? DEFAULT_THRESHOLD);
-    const batchSize = Math.min(Math.max(Number(options.batchSize) || DEFAULT_BATCH_SIZE, 1), 1000);
+    const batchSize = Math.min(
+      Math.max(Number(options.batchSize) || DEFAULT_BATCH_SIZE, 1),
+      1000,
+    );
     const dryRun = Boolean(options.dryRun);
     const statMap = await loadFeatureStatMaps(pool, modelVersion);
 
@@ -563,7 +638,8 @@ export async function generateLeadEmails(pool, env = process.env, options = {}) 
 
       const bedrock = await tryBedrockHtml(env, prompt);
       const outcomeKey = bedrockOutcomeKey(bedrock);
-      failureReasonHistogram[outcomeKey] = (failureReasonHistogram[outcomeKey] || 0) + 1;
+      failureReasonHistogram[outcomeKey] =
+        (failureReasonHistogram[outcomeKey] || 0) + 1;
       if (bedrock.attempted && !bedrock.ok && !firstBedrockFailure) {
         firstBedrockFailure = {
           leadId: lead.id,
@@ -643,7 +719,10 @@ export async function generateLeadEmails(pool, env = process.env, options = {}) 
 }
 
 export function startLeadEmailScheduler(pool, env = process.env) {
-  const everyMinutes = Math.max(1, Number(env.LEAD_MAIL_SCHEDULE_MINUTES) || 60);
+  const everyMinutes = Math.max(
+    1,
+    Number(env.LEAD_MAIL_SCHEDULE_MINUTES) || 60,
+  );
   const intervalMs = everyMinutes * 60 * 1000;
 
   const run = async () => {

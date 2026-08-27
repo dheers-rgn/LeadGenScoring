@@ -210,8 +210,14 @@ async function collectFeatureCounts(pool) {
     for (const r of allRows) {
       const val = norm(r[m.allValueCol]);
       if (!val) continue;
-      if (m.feature === "country") {
-        upsertMax(featureMaps.country.all, val, r[m.allCountCol]);
+      // country & course read the *marginal* counts from the shared
+      // dr_all_country_course cross-tab. Those marginals (countcountrylevel /
+      // countcourselevel) are repeated on every row of the cross-tab, so they
+      // must be de-duplicated with upsertMax — summing them with upsertCount
+      // would multiply each value's count by the number of cross-tab rows
+      // (e.g. Course "All Leads" came out as 1.3M instead of ~100k).
+      if (m.feature === "country" || m.feature === "course") {
+        upsertMax(featureMaps[m.feature].all, val, r[m.allCountCol]);
       } else {
         upsertCount(featureMaps[m.feature].all, val, num(r[m.allCountCol]));
       }
@@ -231,7 +237,6 @@ async function collectFeatureCounts(pool) {
 }
 
 export async function buildAggregatedMlParams(pool, env = process.env) {
-
   console.log("[ML BUILD] Starting buildAggregatedMlParams");
 
   await ensureSchema(pool);
@@ -303,7 +308,7 @@ export async function buildAggregatedMlParams(pool, env = process.env) {
   );
 
   console.log("[ML BUILD] Rows to insert:", rows.length);
-console.log("[ML BUILD] Model version:", modelVersion);
+  console.log("[ML BUILD] Model version:", modelVersion);
 
   if (rows.length) {
     const sql = `INSERT INTO dr_ml_conversion_params
@@ -319,4 +324,3 @@ console.log("[ML BUILD] Model version:", modelVersion);
 
   return { modelVersion, trainedAt, rowsInserted: rows.length };
 }
- 

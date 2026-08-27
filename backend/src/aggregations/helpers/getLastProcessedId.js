@@ -14,7 +14,7 @@ export async function getLastProcessedId(pool) {
 export async function getLatestContactId(pool) {
   const [rows] = await pool.query(`
     SELECT MAX(id) AS maxId
-    FROM dr_contacts_V3
+    FROM dr_contacts_V6
   `);
 
   return rows[0]?.maxId || 0;

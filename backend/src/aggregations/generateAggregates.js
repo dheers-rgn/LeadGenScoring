@@ -148,7 +148,7 @@ const ALL_GENERATORS = [
         Con.id,
         Con.country_id,
         Con.interest_id
-      FROM dr_contacts_V3 Con
+      FROM dr_contacts_V6 Con
       WHERE Con.id > ?
     ),
 
@@ -192,10 +192,10 @@ const ALL_GENERATORS = [
     INNER JOIN course_contacts CourseContacts
       ON CourseContacts.interest_id = CC.interest_id
 
-    INNER JOIN dr_country_master_V3 Country
+    INNER JOIN dr_country_master_V6 Country
       ON Country.id = CC.country_id
 
-    INNER JOIN dr_interest_master_V3 Interest
+    INNER JOIN dr_interest_master_V6 Interest
       ON Interest.id = CC.interest_id
 
     ORDER BY
@@ -224,8 +224,8 @@ const ALL_GENERATORS = [
         WHEN Q.id IS NULL THEN 'UNKNOWN_QUALIFICATION'
         ELSE Q.qualification_name
       END AS qualification
-    FROM dr_contacts_V3 C
-    LEFT JOIN dr_highest_level_qualification_V3 Q
+    FROM dr_contacts_V6 C
+    LEFT JOIN dr_highest_level_qualification_V6 Q
       ON C.hlq_id = Q.id
     WHERE C.id > ?
     GROUP BY
@@ -287,9 +287,9 @@ const ALL_GENERATORS = [
         ELSE 'UNKNOWN_STUDY_MODE'
       END AS studymode
 
-    FROM dr_contacts_V3 C
+    FROM dr_contacts_V6 C
 
-    LEFT JOIN dr_mode_of_study_V3 M
+    LEFT JOIN dr_mode_of_study_V6 M
       ON C.study_mode COLLATE utf8mb4_0900_ai_ci =
          CAST(M.id AS CHAR) COLLATE utf8mb4_0900_ai_ci
 
@@ -353,7 +353,7 @@ const ALL_GENERATORS = [
 
       COUNT(*) AS count
 
-    FROM dr_contacts_V3 C
+    FROM dr_contacts_V6 C
 
     WHERE C.id > ?
 
@@ -384,8 +384,8 @@ const ALL_GENERATORS = [
       COUNT(*) AS leads_count,
       B.status_name AS lead_status,
       B.status_name AS status_name
-    FROM dr_leads_V3 A
-    LEFT JOIN dr_lead_status_master_V3 B
+    FROM dr_leads_V6 A
+    LEFT JOIN dr_lead_status_master_V6 B
       ON A.lead_status = B.id
     WHERE A.id > ?
     GROUP BY A.lead_status, B.status_name
@@ -417,12 +417,12 @@ const ALL_GENERATORS = [
       C.sub_status_name AS lead_substatus,
       MAX(A.created_at) AS last_lead_date
 
-    FROM dr_leads_V3 A
+    FROM dr_leads_V6 A
 
-    LEFT JOIN dr_lead_status_master_V3 B
+    LEFT JOIN dr_lead_status_master_V6 B
       ON A.lead_status = B.id
 
-    LEFT JOIN dr_lead_sub_status_master_V3 C
+    LEFT JOIN dr_lead_sub_status_master_V6 C
       ON A.lead_sub_status = C.id
 
     WHERE A.id > ?
@@ -453,8 +453,8 @@ const ALL_GENERATORS = [
     SELECT
       COUNT(*) AS count,
       R.remarks AS response
-    FROM dr_lead_remarks_V3 R
-    INNER JOIN dr_leads_V3 A
+    FROM dr_lead_remarks_V6 R
+    INNER JOIN dr_leads_V6 A
       ON R.lead_id = A.id
     WHERE A.id > ?
     GROUP BY R.remarks
@@ -481,9 +481,9 @@ const CONV_GENERATORS = [
         Con.country_id,
         COUNT(*) AS CtrCount
 
-      FROM dr_contacts_V3 Con
+      FROM dr_contacts_V6 Con
 
-      INNER JOIN dr_leads_V3 leads
+      INNER JOIN dr_leads_V6 leads
         ON Con.id = leads.contact_id
 
       WHERE Con.id > ?
@@ -498,12 +498,12 @@ const CONV_GENERATORS = [
         Intrst.id AS intrest_id,
         COUNT(*) AS Coursecount
 
-      FROM dr_contacts_V3 Con
+      FROM dr_contacts_V6 Con
 
-      INNER JOIN dr_leads_V3 leads
+      INNER JOIN dr_leads_V6 leads
         ON Con.id = leads.contact_id
 
-      LEFT JOIN dr_interest_master_V3 Intrst
+      LEFT JOIN dr_interest_master_V6 Intrst
         ON Con.interest_id = Intrst.id
 
       WHERE Con.id > ?
@@ -525,10 +525,10 @@ const CONV_GENERATORS = [
     LEFT JOIN course_leads B
       ON A.country_id = B.country_id
 
-    INNER JOIN dr_country_master_V3 Country
+    INNER JOIN dr_country_master_V6 Country
       ON Country.id = A.country_id
 
-    INNER JOIN dr_interest_master_V3 Intrest
+    INNER JOIN dr_interest_master_V6 Intrest
       ON Intrest.id = B.intrest_id
 
     ORDER BY
@@ -557,10 +557,10 @@ const CONV_GENERATORS = [
           THEN 'UNKNOWN_QUALIFICATION'
         ELSE Q.qualification_name
       END AS qualification
-    FROM dr_contacts_V3 C
-    INNER JOIN dr_leads_V3 leads
+    FROM dr_contacts_V6 C
+    INNER JOIN dr_leads_V6 leads
       ON C.id = leads.contact_id
-    LEFT JOIN dr_highest_level_qualification_V3 Q
+    LEFT JOIN dr_highest_level_qualification_V6 Q
       ON C.hlq_id = Q.id
     WHERE C.id > ?
       AND leads.lead_status IN (${CONV_STATUS_SQL})
@@ -602,12 +602,12 @@ const CONV_GENERATORS = [
         ELSE COALESCE(M.mode_name, C.study_mode)
       END AS studymode
 
-    FROM dr_contacts_V3 C
+    FROM dr_contacts_V6 C
 
-    INNER JOIN dr_leads_V3 leads
+    INNER JOIN dr_leads_V6 leads
       ON C.id = leads.contact_id
 
-    LEFT JOIN dr_mode_of_study_V3 M
+    LEFT JOIN dr_mode_of_study_V6 M
       ON C.study_mode COLLATE utf8mb4_0900_ai_ci =
          CAST(M.id AS CHAR) COLLATE utf8mb4_0900_ai_ci
 
@@ -644,8 +644,8 @@ const CONV_GENERATORS = [
     SELECT
       C.city,
       COUNT(*) AS count
-    FROM dr_contacts_V3 C
-    INNER JOIN dr_leads_V3 leads
+    FROM dr_contacts_V6 C
+    INNER JOIN dr_leads_V6 leads
       ON C.id = leads.contact_id
     WHERE leads.lead_status IN (${CONV_STATUS_SQL})
       AND C.id > ?
@@ -665,9 +665,9 @@ const CONV_GENERATORS = [
       B.status_name AS lead_status,
       B.status_name AS status_name
 
-    FROM dr_leads_V3 A
+    FROM dr_leads_V6 A
 
-    LEFT JOIN dr_lead_status_master_V3 B
+    LEFT JOIN dr_lead_status_master_V6 B
       ON A.lead_status = B.id
 
     WHERE A.id > ?
@@ -703,12 +703,12 @@ const CONV_GENERATORS = [
       C.sub_status_name AS lead_substatus,
       MAX(A.created_at) AS last_lead_date
 
-    FROM dr_leads_V3 A
+    FROM dr_leads_V6 A
 
-    LEFT JOIN dr_lead_status_master_V3 B
+    LEFT JOIN dr_lead_status_master_V6 B
       ON A.lead_status = B.id
 
-    LEFT JOIN dr_lead_sub_status_master_V3 C
+    LEFT JOIN dr_lead_sub_status_master_V6 C
       ON A.lead_sub_status = C.id
 
     WHERE A.id > ?
@@ -747,12 +747,12 @@ const CONV_GENERATORS = [
       B.status_name AS lead_status,
       B.status_name AS status_name
 
-    FROM dr_lead_remarks_V3 R
+    FROM dr_lead_remarks_V6 R
 
-    INNER JOIN dr_leads_V3 A
+    INNER JOIN dr_leads_V6 A
       ON R.lead_id = A.id
 
-    LEFT JOIN dr_lead_status_master_V3 B
+    LEFT JOIN dr_lead_status_master_V6 B
       ON A.lead_status = B.id
 
     WHERE A.id > ?
