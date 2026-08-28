@@ -95,8 +95,8 @@ async function fetchLatestContacts(pool, limit = 100) {
         WHEN UPPER(COALESCE(M.mode_name, C.study_mode)) LIKE '%CONTACT%' THEN 'CONTACT'
         ELSE COALESCE(M.mode_name, C.study_mode)
       END AS study_mode_label
-    FROM dr_contacts C
-    LEFT JOIN dr_leads L
+    FROM dr_contacts_V6 C
+    LEFT JOIN dr_leads_V6 L
       ON L.contact_id = C.id
     LEFT JOIN (
       SELECT *
