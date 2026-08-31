@@ -240,7 +240,6 @@ function fallbackEmailHtml(lead, factors) {
 async function columnExists(pool, tableName, columnName) {
   const [dbRows] = await pool.query(`SELECT DATABASE() AS db_name`);
   const dbName = dbRows[0]?.db_name;
-  console.log("dbName: ", dbName);
 
   if (!dbName) return false;
   const [rows] = await pool.query(

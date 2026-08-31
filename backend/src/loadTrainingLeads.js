@@ -9,8 +9,6 @@
  * with the freshest 100 contact-level rows.
  */
 
-const PAGE_SIZE_MAX = 100;
-
 /**
  * Ensure the dr_training_leads table exists (idempotent CREATE TABLE).
  * Also migrates the old typo column 'cousre_id' to 'course_id' if needed.
@@ -40,7 +38,7 @@ async function ensureTargetTable(pool) {
       scored_at DATETIME NULL COMMENT 'when batch scoring last ran',
       IsEmailGenerated TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'dr_email_generation_status.code: 0 pending, 1 template, 2 bedrock, 3 other fallback',
       EmailHTML LONGTEXT NULL COMMENT 'generated motivational email in HTML format',
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP NULL,
       updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'reference only',
       INDEX idx_converted (converted),
       INDEX idx_contact_uuid (contact_uuid),
@@ -67,7 +65,7 @@ function getConvertedStatuses() {
  *  3. Join master tables for human-readable labels.
  *  4. Get the most recent remark for the lead.
  */
-async function fetchLatestContacts(pool, limit = 100) {
+async function fetchLatestContacts(pool, limit) {
   const sql = `
     SELECT
       C.id           AS contact_id,
@@ -129,6 +127,8 @@ async function fetchLatestContacts(pool, limit = 100) {
   `;
 
   const [rows] = await pool.query(sql, [limit]);
+  console.log("rows--->: ", rows);
+
   return rows;
 }
 
@@ -162,7 +162,7 @@ async function insertRows(pool, rows, chunkSize = 500) {
       remarks     = VALUES(remarks),
       study_mode  = VALUES(study_mode),
       converted   = VALUES(converted),
-      updated_at  = NOW()
+      created_at = VALUES(created_at)
   `;
 
   let inserted = 0;
@@ -170,7 +170,10 @@ async function insertRows(pool, rows, chunkSize = 500) {
     const chunk = rows.slice(i, i + chunkSize);
     const values = chunk.map((r) => {
       const leadStatusId = r.lead_status_id;
-      const converted = leadStatusId != null && convStatuses.includes(Number(leadStatusId)) ? 1 : 0;
+      const converted =
+        leadStatusId != null && convStatuses.includes(Number(leadStatusId))
+          ? 1
+          : 0;
 
       return [
         r.contact_uuid ?? null,
@@ -188,7 +191,7 @@ async function insertRows(pool, rows, chunkSize = 500) {
         r.remarks ?? null,
         r.study_mode_label ?? null,
         converted,
-        r.lead_created_at ?? r.contact_created_at ?? new Date(),
+        r.contact_created_at ?? null,
       ];
     });
 
@@ -209,11 +212,11 @@ async function insertRows(pool, rows, chunkSize = 500) {
  *  4. Insert the new rows.
  *
  * @param {import("mysql2/promise").Pool} pool
- * @param {number} [limit=100] - number of contacts to fetch
+ * @param {number} [limit] - number of contacts to fetch
  * @returns {{ rowsLoaded: number, limit: number }}
  */
-export async function loadTrainingLeads(pool, limit = 100) {
-  const safeLimit = Math.min(Math.max(1, limit), PAGE_SIZE_MAX);
+export async function loadTrainingLeads(pool, limit) {
+  const safeLimit = Math.max(1, limit);
 
   await ensureTargetTable(pool);
 
@@ -226,4 +229,3 @@ export async function loadTrainingLeads(pool, limit = 100) {
 
   return { rowsLoaded: rowsInserted, limit: safeLimit };
 }
- 

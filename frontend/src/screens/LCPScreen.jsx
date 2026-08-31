@@ -18,6 +18,7 @@ const COLS = [
   { key: "lead_sub_status", label: "Sub status", w: 120 },
   { key: "remarks", label: "Remarks", w: 200 },
   { key: "study_mode", label: "Study mode", w: 100 },
+  { key: "created_at", label: "Created at", w: 100 },
   { key: "score_logit_sum", label: "Score logit Σ", w: 100 },
   { key: "scored_at", label: "Scored at", w: 160 },
   { key: "email_actions", label: "Email", w: 120 },
@@ -77,8 +78,17 @@ export default function LCPScreen({ onBack }) {
   const [previewStatus, setPreviewStatus] = useState("");
   const [previewRunning, setPreviewRunning] = useState(false);
   const [previewRows, setPreviewRows] = useState([]);
-  const [emailModal, setEmailModal] = useState({ open: false, title: "", html: "" });
-  const [summaryModal, setSummaryModal] = useState({ open: false, title: "", summary: "", questions: [] });
+  const [emailModal, setEmailModal] = useState({
+    open: false,
+    title: "",
+    html: "",
+  });
+  const [summaryModal, setSummaryModal] = useState({
+    open: false,
+    title: "",
+    summary: "",
+    questions: [],
+  });
   const [profileJobStatus, setProfileJobStatus] = useState("");
   const [profileJobRunning, setProfileJobRunning] = useState(false);
   const [previewProfileStatus, setPreviewProfileStatus] = useState("");
@@ -111,14 +121,17 @@ export default function LCPScreen({ onBack }) {
     if (filters.country) q.set("country", filters.country);
     if (filters.qualification) q.set("qualification", filters.qualification);
     if (filters.lead_status) q.set("lead_status", filters.lead_status);
-    if (filters.lead_sub_status) q.set("lead_sub_status", filters.lead_sub_status);
+    if (filters.lead_sub_status)
+      q.set("lead_sub_status", filters.lead_sub_status);
     if (filters.study_mode) q.set("study_mode", filters.study_mode);
     try {
       const data = await apiGet(`/api/training-leads?${q.toString()}`);
       setRows(data.rows || []);
       setTotal(data.total ?? 0);
       setTotalPages(data.totalPages ?? 1);
-      setStatus(`${data.total?.toLocaleString() ?? 0} lead(s) · page ${data.page} of ${data.totalPages}`);
+      setStatus(
+        `${data.total?.toLocaleString() ?? 0} lead(s) · page ${data.page} of ${data.totalPages}`,
+      );
     } catch (e) {
       setError(e.message);
       setStatus("Failed.");
@@ -142,7 +155,7 @@ export default function LCPScreen({ onBack }) {
   async function runLoadDataJob() {
     setLoadRunning(true);
     try {
-      const data= await apiPost("/api/training-leads/load");
+      const data = await apiPost("/api/training-leads/load");
       await loadRows();
     } catch (e) {
       setError(e.message);
@@ -174,7 +187,10 @@ export default function LCPScreen({ onBack }) {
         threshold: 0.2,
       });
       const hist = data.bedrockDiagnostics?.failureReasonHistogram;
-      const histStr = hist && Object.keys(hist).length ? ` Outcomes: ${JSON.stringify(hist)}.` : "";
+      const histStr =
+        hist && Object.keys(hist).length
+          ? ` Outcomes: ${JSON.stringify(hist)}.`
+          : "";
       const fail = data.bedrockDiagnostics?.firstBedrockFailure;
       const failStr =
         fail?.errorDetail != null
@@ -202,7 +218,10 @@ export default function LCPScreen({ onBack }) {
         threshold: 0.2,
       });
       const hist = data.bedrockDiagnostics?.failureReasonHistogram;
-      const histStr = hist && Object.keys(hist).length ? ` Outcomes: ${JSON.stringify(hist)}.` : "";
+      const histStr =
+        hist && Object.keys(hist).length
+          ? ` Outcomes: ${JSON.stringify(hist)}.`
+          : "";
       const fail = data.bedrockDiagnostics?.firstBedrockFailure;
       const failStr =
         fail?.errorDetail != null
@@ -233,7 +252,10 @@ export default function LCPScreen({ onBack }) {
       const pRows = data.preview || [];
       setPreviewProfileRows(pRows);
       const hist = data.bedrockDiagnostics?.failureReasonHistogram;
-      const histStr = hist && Object.keys(hist).length ? ` Outcomes: ${JSON.stringify(hist)}.` : "";
+      const histStr =
+        hist && Object.keys(hist).length
+          ? ` Outcomes: ${JSON.stringify(hist)}.`
+          : "";
       const fail = data.bedrockDiagnostics?.firstBedrockFailure;
       const failStr =
         fail?.errorDetail != null
@@ -276,7 +298,10 @@ export default function LCPScreen({ onBack }) {
       const pRows = data.preview || [];
       setPreviewRows(pRows);
       const hist = data.bedrockDiagnostics?.failureReasonHistogram;
-      const histStr = hist && Object.keys(hist).length ? ` Outcomes: ${JSON.stringify(hist)}.` : "";
+      const histStr =
+        hist && Object.keys(hist).length
+          ? ` Outcomes: ${JSON.stringify(hist)}.`
+          : "";
       const fail = data.bedrockDiagnostics?.firstBedrockFailure;
       const failStr =
         fail?.errorDetail != null
@@ -302,29 +327,63 @@ export default function LCPScreen({ onBack }) {
   }
 
   return (
-    <div style={{ padding: "28px 24px 60px", maxWidth: "100%", margin: "0 auto" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
+    <div
+      style={{ padding: "28px 24px 60px", maxWidth: "100%", margin: "0 auto" }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          marginBottom: "20px",
+          flexWrap: "wrap",
+          gap: "12px",
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           <button
             type="button"
             onClick={onBack}
             style={{
-              display: "flex", alignItems: "center", gap: "6px",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
               background: "rgba(255,255,255,0.08)",
               border: "1px solid rgba(255,255,255,0.15)",
-              color: "#fff", padding: "7px 14px", borderRadius: "4px",
-              cursor: "pointer", fontSize: "13px", fontWeight: 600,
-              fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0,
+              color: "#fff",
+              padding: "7px 14px",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "13px",
+              fontWeight: 600,
+              fontFamily: "inherit",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
           >
             ← Dashboard
           </button>
           <div>
-            <h2 style={{ margin: 0, fontSize: "20px", color: "#fff", fontWeight: 700 }}>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "20px",
+                color: "#fff",
+                fontWeight: 700,
+              }}
+            >
               Leads Conversion Probability
             </h2>
-            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "13px", marginTop: "4px" }}>
-              <code style={{ color: "rgba(245,196,0,0.9)" }}>dr_training_leads</code>
+            <div
+              style={{
+                color: "rgba(255,255,255,0.5)",
+                fontSize: "13px",
+                marginTop: "4px",
+              }}
+            >
+              <code style={{ color: "rgba(245,196,0,0.9)" }}>
+                dr_training_leads
+              </code>
               {" · ordered by highest conversion probability · "}
               {PAGE_SIZE} rows per page
             </div>
@@ -332,7 +391,10 @@ export default function LCPScreen({ onBack }) {
         </div>
         <button
           type="button"
-          onClick={() => { loadOptions(); loadRows(); }}
+          onClick={() => {
+            loadOptions();
+            loadRows();
+          }}
           style={{
             background: "rgba(255,255,255,0.1)",
             border: "1px solid rgba(255,255,255,0.18)",
@@ -352,7 +414,9 @@ export default function LCPScreen({ onBack }) {
           onClick={runMotivationMailJob}
           disabled={mailJobRunning}
           style={{
-            background: mailJobRunning ? "rgba(255,255,255,0.05)" : "rgba(245,196,0,0.18)",
+            background: mailJobRunning
+              ? "rgba(255,255,255,0.05)"
+              : "rgba(245,196,0,0.18)",
             border: "1px solid rgba(245,196,0,0.45)",
             color: mailJobRunning ? "rgba(255,255,255,0.5)" : "#f5c400",
             padding: "8px 15px",
@@ -370,7 +434,9 @@ export default function LCPScreen({ onBack }) {
           onClick={runLoadDataJob}
           disabled={loadRunning}
           style={{
-            background: loadRunning ? "rgba(255,255,255,0.05)" : "rgba(245,196,0,0.18)",
+            background: loadRunning
+              ? "rgba(255,255,255,0.05)"
+              : "rgba(245,196,0,0.18)",
             border: "1px solid rgba(245,196,0,0.45)",
             color: loadRunning ? "rgba(255,255,255,0.5)" : "#f5c400",
             padding: "8px 15px",
@@ -388,7 +454,9 @@ export default function LCPScreen({ onBack }) {
           onClick={runScoreLeadsJob}
           disabled={scoreRunning}
           style={{
-            background: scoreRunning ? "rgba(255,255,255,0.05)" : "rgba(245,196,0,0.18)",
+            background: scoreRunning
+              ? "rgba(255,255,255,0.05)"
+              : "rgba(245,196,0,0.18)",
             border: "1px solid rgba(245,196,0,0.45)",
             color: scoreRunning ? "rgba(255,255,255,0.5)" : "#f5c400",
             padding: "8px 15px",
@@ -406,7 +474,9 @@ export default function LCPScreen({ onBack }) {
           onClick={runPreviewEmailJob}
           disabled={previewRunning}
           style={{
-            background: previewRunning ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.1)",
+            background: previewRunning
+              ? "rgba(255,255,255,0.05)"
+              : "rgba(255,255,255,0.1)",
             border: "1px solid rgba(255,255,255,0.18)",
             color: previewRunning ? "rgba(255,255,255,0.5)" : "#fff",
             padding: "8px 15px",
@@ -424,7 +494,9 @@ export default function LCPScreen({ onBack }) {
           onClick={runProfileJob}
           disabled={profileJobRunning}
           style={{
-            background: profileJobRunning ? "rgba(255,255,255,0.05)" : "rgba(100,200,255,0.15)",
+            background: profileJobRunning
+              ? "rgba(255,255,255,0.05)"
+              : "rgba(100,200,255,0.15)",
             border: "1px solid rgba(100,200,255,0.4)",
             color: profileJobRunning ? "rgba(255,255,255,0.5)" : "#8cd4ff",
             padding: "8px 15px",
@@ -442,7 +514,9 @@ export default function LCPScreen({ onBack }) {
           onClick={runPreviewProfileJob}
           disabled={previewProfileRunning}
           style={{
-            background: previewProfileRunning ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.1)",
+            background: previewProfileRunning
+              ? "rgba(255,255,255,0.05)"
+              : "rgba(255,255,255,0.1)",
             border: "1px solid rgba(255,255,255,0.18)",
             color: previewProfileRunning ? "rgba(255,255,255,0.5)" : "#fff",
             padding: "8px 15px",
@@ -457,32 +531,64 @@ export default function LCPScreen({ onBack }) {
         </button>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
-        <span style={{
-          background: "rgba(245,196,0,0.14)",
-          border: "1px solid rgba(245,196,0,0.35)",
-          color: "#f5c400",
-          padding: "6px 14px",
-          borderRadius: "999px",
-          fontSize: "12px",
-          fontWeight: 600,
-        }}>{status}</span>
-        {error && <span style={{ color: "#ff8a80", fontSize: "13px" }}>{error}</span>}
-        {mailJobStatus && <span style={{ color: "rgba(255,255,255,0.65)", fontSize: "13px" }}>{mailJobStatus}</span>}
-        {previewStatus && <span style={{ color: "rgba(255,255,255,0.65)", fontSize: "13px" }}>{previewStatus}</span>}
-        {profileJobStatus && <span style={{ color: "rgba(100,200,255,0.8)", fontSize: "13px" }}>{profileJobStatus}</span>}
-        {previewProfileStatus && <span style={{ color: "rgba(100,200,255,0.8)", fontSize: "13px" }}>{previewProfileStatus}</span>}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          marginBottom: "16px",
+          flexWrap: "wrap",
+        }}
+      >
+        <span
+          style={{
+            background: "rgba(245,196,0,0.14)",
+            border: "1px solid rgba(245,196,0,0.35)",
+            color: "#f5c400",
+            padding: "6px 14px",
+            borderRadius: "999px",
+            fontSize: "12px",
+            fontWeight: 600,
+          }}
+        >
+          {status}
+        </span>
+        {error && (
+          <span style={{ color: "#ff8a80", fontSize: "13px" }}>{error}</span>
+        )}
+        {mailJobStatus && (
+          <span style={{ color: "rgba(255,255,255,0.65)", fontSize: "13px" }}>
+            {mailJobStatus}
+          </span>
+        )}
+        {previewStatus && (
+          <span style={{ color: "rgba(255,255,255,0.65)", fontSize: "13px" }}>
+            {previewStatus}
+          </span>
+        )}
+        {profileJobStatus && (
+          <span style={{ color: "rgba(100,200,255,0.8)", fontSize: "13px" }}>
+            {profileJobStatus}
+          </span>
+        )}
+        {previewProfileStatus && (
+          <span style={{ color: "rgba(100,200,255,0.8)", fontSize: "13px" }}>
+            {previewProfileStatus}
+          </span>
+        )}
       </div>
 
       {/* Filters */}
-      <div style={{
-        ...cardStyle,
-        marginBottom: "16px",
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-        gap: "12px 16px",
-        alignItems: "end",
-      }}>
+      <div
+        style={{
+          ...cardStyle,
+          marginBottom: "16px",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+          gap: "12px 16px",
+          alignItems: "end",
+        }}
+      >
         <FilterSelect
           label="Country"
           value={filters.country}
@@ -513,11 +619,24 @@ export default function LCPScreen({ onBack }) {
           options={options.study_mode}
           onChange={(v) => setFilter("study_mode", v)}
         />
-        <div style={{ display: "flex", gap: "8px", paddingBottom: "2px", alignItems: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            paddingBottom: "2px",
+            alignItems: "center",
+          }}
+        >
           <button
             type="button"
             onClick={() => {
-              setFilters({ country: "", qualification: "", lead_status: "", lead_sub_status: "", study_mode: "" });
+              setFilters({
+                country: "",
+                qualification: "",
+                lead_status: "",
+                lead_sub_status: "",
+                study_mode: "",
+              });
               setPage(1);
             }}
             style={{
@@ -553,14 +672,25 @@ export default function LCPScreen({ onBack }) {
 
       {/* Grid */}
       <div style={{ ...cardStyle, padding: "0", overflow: "hidden" }}>
-        <div style={{ overflowX: "auto", maxHeight: "70vh", overflowY: "auto" }}>
-          <table style={{
-            borderCollapse: "collapse",
-            fontSize: "12px",
-            color: "rgba(255,255,255,0.9)",
-            minWidth: COLS.reduce((s, c) => s + c.w, 0),
-          }}>
-            <thead style={{ position: "sticky", top: 0, zIndex: 1, background: "#1a3d2e" }}>
+        <div
+          style={{ overflowX: "auto", maxHeight: "70vh", overflowY: "auto" }}
+        >
+          <table
+            style={{
+              borderCollapse: "collapse",
+              fontSize: "12px",
+              color: "rgba(255,255,255,0.9)",
+              minWidth: COLS.reduce((s, c) => s + c.w, 0),
+            }}
+          >
+            <thead
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 1,
+                background: "#1a3d2e",
+              }}
+            >
               <tr>
                 {COLS.map((c) => (
                   <th
@@ -587,7 +717,14 @@ export default function LCPScreen({ onBack }) {
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={COLS.length} style={{ padding: "24px", color: "rgba(255,255,255,0.45)", textAlign: "center" }}>
+                  <td
+                    colSpan={COLS.length}
+                    style={{
+                      padding: "24px",
+                      color: "rgba(255,255,255,0.45)",
+                      textAlign: "center",
+                    }}
+                  >
                     No rows match the current filters.
                   </td>
                 </tr>
@@ -595,10 +732,17 @@ export default function LCPScreen({ onBack }) {
                 rows.map((r, i) => (
                   <tr
                     key={r.id != null ? r.id : `${r.lead_id}-${i}`}
-                    style={{ background: i % 2 === 0 ? "rgba(0,0,0,0.12)" : "transparent" }}
+                    style={{
+                      background:
+                        i % 2 === 0 ? "rgba(0,0,0,0.12)" : "transparent",
+                    }}
                   >
-                    <Cell narrow title={r.contact_uuid}>{r.contact_uuid}</Cell>
-                    <Cell narrow title={r.lead_id}>{r.lead_id}</Cell>
+                    <Cell narrow title={r.contact_uuid}>
+                      {r.contact_uuid}
+                    </Cell>
+                    <Cell narrow title={r.lead_id}>
+                      {r.lead_id}
+                    </Cell>
                     <td style={convPctCellStyle(r.conversion_probability)}>
                       {pctFromProb(r.conversion_probability)}
                     </td>
@@ -613,10 +757,26 @@ export default function LCPScreen({ onBack }) {
                     <Cell title={r.lead_sub_status}>{r.lead_sub_status}</Cell>
                     <Cell title={r.remarks}>{r.remarks}</Cell>
                     <Cell title={r.study_mode}>{r.study_mode}</Cell>
-                    <td style={{ padding: "6px 8px", fontFamily: "monospace", fontSize: "11px", whiteSpace: "nowrap" }}>
-                      {r.score_logit_sum != null ? Number(r.score_logit_sum).toFixed(4) : "—"}
+                    <Cell title={r.created_at}>{new Date(r.created_at).toLocaleDateString('en-GB')}</Cell>
+                    <td
+                      style={{
+                        padding: "6px 8px",
+                        fontFamily: "monospace",
+                        fontSize: "11px",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {r.score_logit_sum != null
+                        ? Number(r.score_logit_sum).toFixed(4)
+                        : "—"}
                     </td>
-                    <td style={{ padding: "6px 8px", whiteSpace: "nowrap", fontSize: "11px" }}>
+                    <td
+                      style={{
+                        padding: "6px 8px",
+                        whiteSpace: "nowrap",
+                        fontSize: "11px",
+                      }}
+                    >
                       {fmtScoredAt(r.scored_at)}
                     </td>
                     <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>
@@ -645,7 +805,14 @@ export default function LCPScreen({ onBack }) {
                           Show Email
                         </button>
                       ) : (
-                        <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px" }}>—</span>
+                        <span
+                          style={{
+                            color: "rgba(255,255,255,0.4)",
+                            fontSize: "11px",
+                          }}
+                        >
+                          —
+                        </span>
                       )}
                     </td>
                     <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>
@@ -655,7 +822,9 @@ export default function LCPScreen({ onBack }) {
                           onClick={() => {
                             let questions = [];
                             try {
-                              const parsed = JSON.parse(r.TargetingQuestions || "[]");
+                              const parsed = JSON.parse(
+                                r.TargetingQuestions || "[]",
+                              );
                               if (Array.isArray(parsed)) questions = parsed;
                             } catch {}
                             setSummaryModal({
@@ -680,7 +849,14 @@ export default function LCPScreen({ onBack }) {
                           Show Summary
                         </button>
                       ) : (
-                        <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px" }}>—</span>
+                        <span
+                          style={{
+                            color: "rgba(255,255,255,0.4)",
+                            fontSize: "11px",
+                          }}
+                        >
+                          —
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -704,14 +880,30 @@ export default function LCPScreen({ onBack }) {
       </div>
 
       {previewRows.length > 0 && (
-        <div style={{ marginTop: "10px", color: "rgba(255,255,255,0.55)", fontSize: "12px" }}>
-          Preview records: {previewRows.map((p) => p.name || p.email || `#${p.id}`).join(", ")}
+        <div
+          style={{
+            marginTop: "10px",
+            color: "rgba(255,255,255,0.55)",
+            fontSize: "12px",
+          }}
+        >
+          Preview records:{" "}
+          {previewRows.map((p) => p.name || p.email || `#${p.id}`).join(", ")}
         </div>
       )}
 
       {previewProfileRows.length > 0 && (
-        <div style={{ marginTop: "10px", color: "rgba(100,200,255,0.6)", fontSize: "12px" }}>
-          Profile preview records: {previewProfileRows.map((p) => p.name || p.email || `#${p.id}`).join(", ")}
+        <div
+          style={{
+            marginTop: "10px",
+            color: "rgba(100,200,255,0.6)",
+            fontSize: "12px",
+          }}
+        >
+          Profile preview records:{" "}
+          {previewProfileRows
+            .map((p) => p.name || p.email || `#${p.id}`)
+            .join(", ")}
         </div>
       )}
 
@@ -727,7 +919,14 @@ export default function LCPScreen({ onBack }) {
             justifyContent: "center",
             padding: "20px",
           }}
-          onClick={() => setSummaryModal({ open: false, title: "", summary: "", questions: [] })}
+          onClick={() =>
+            setSummaryModal({
+              open: false,
+              title: "",
+              summary: "",
+              questions: [],
+            })
+          }
         >
           <div
             style={{
@@ -753,7 +952,14 @@ export default function LCPScreen({ onBack }) {
               <strong>{summaryModal.title || "Profile Summary"}</strong>
               <button
                 type="button"
-                onClick={() => setSummaryModal({ open: false, title: "", summary: "", questions: [] })}
+                onClick={() =>
+                  setSummaryModal({
+                    open: false,
+                    title: "",
+                    summary: "",
+                    questions: [],
+                  })
+                }
                 style={{
                   background: "transparent",
                   border: "1px solid #c9c9c9",
@@ -766,13 +972,30 @@ export default function LCPScreen({ onBack }) {
               </button>
             </div>
             <div style={{ padding: "16px 18px" }}>
-              <h3 style={{ margin: "0 0 12px", fontSize: "15px", color: "#333" }}>Profile Summary</h3>
-              <div style={{ fontSize: "14px", lineHeight: "1.7", color: "#444", whiteSpace: "pre-wrap" }}>
+              <h3
+                style={{ margin: "0 0 12px", fontSize: "15px", color: "#333" }}
+              >
+                Profile Summary
+              </h3>
+              <div
+                style={{
+                  fontSize: "14px",
+                  lineHeight: "1.7",
+                  color: "#444",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
                 {summaryModal.summary || "No summary available."}
               </div>
               {summaryModal.questions.length > 0 && (
                 <>
-                  <h3 style={{ margin: "20px 0 12px", fontSize: "15px", color: "#333" }}>
+                  <h3
+                    style={{
+                      margin: "20px 0 12px",
+                      fontSize: "15px",
+                      color: "#333",
+                    }}
+                  >
                     Targeting Questions ({summaryModal.questions.length})
                   </h3>
                   <ol style={{ paddingLeft: "20px", margin: 0 }}>
@@ -780,7 +1003,9 @@ export default function LCPScreen({ onBack }) {
                       const question =
                         typeof item === "string" ? item : item && item.question;
                       const answer =
-                        typeof item === "object" && item && item.answer ? item.answer : "";
+                        typeof item === "object" && item && item.answer
+                          ? item.answer
+                          : "";
                       return (
                         <li
                           key={idx}
@@ -853,7 +1078,9 @@ export default function LCPScreen({ onBack }) {
               <strong>{emailModal.title || "Email"}</strong>
               <button
                 type="button"
-                onClick={() => setEmailModal({ open: false, title: "", html: "" })}
+                onClick={() =>
+                  setEmailModal({ open: false, title: "", html: "" })
+                }
                 style={{
                   background: "transparent",
                   border: "1px solid #c9c9c9",
@@ -867,7 +1094,9 @@ export default function LCPScreen({ onBack }) {
             </div>
             <div
               style={{ padding: "16px 18px" }}
-              dangerouslySetInnerHTML={{ __html: emailModal.html || "<p>No content.</p>" }}
+              dangerouslySetInnerHTML={{
+                __html: emailModal.html || "<p>No content.</p>",
+              }}
             />
           </div>
         </div>
@@ -879,7 +1108,15 @@ export default function LCPScreen({ onBack }) {
 function FilterSelect({ label, value, options, onChange }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "rgba(255,255,255,0.5)" }}>
+      <span
+        style={{
+          fontSize: "11px",
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: "0.5px",
+          color: "rgba(255,255,255,0.5)",
+        }}
+      >
         {label}
       </span>
       <select
@@ -908,7 +1145,8 @@ function FilterSelect({ label, value, options, onChange }) {
 }
 
 function Cell({ children, title, narrow }) {
-  const t = title != null ? String(title) : children != null ? String(children) : "";
+  const t =
+    title != null ? String(title) : children != null ? String(children) : "";
   return (
     <td
       title={t}
@@ -926,18 +1164,29 @@ function Cell({ children, title, narrow }) {
   );
 }
 
-function PaginationBar({ page, totalPages, total, onPrev, onNext, disabledPrev, disabledNext }) {
+function PaginationBar({
+  page,
+  totalPages,
+  total,
+  onPrev,
+  onNext,
+  disabledPrev,
+  disabledNext,
+}) {
   return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      flexWrap: "wrap",
-      gap: "10px",
-      marginBottom: "12px",
-    }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: "10px",
+        marginBottom: "12px",
+      }}
+    >
       <span style={{ color: "rgba(255,255,255,0.55)", fontSize: "13px" }}>
-        Page <strong style={{ color: "#fff" }}>{page}</strong> of <strong style={{ color: "#fff" }}>{totalPages}</strong>
+        Page <strong style={{ color: "#fff" }}>{page}</strong> of{" "}
+        <strong style={{ color: "#fff" }}>{totalPages}</strong>
         {" · "}
         {total.toLocaleString()} total rows
       </span>

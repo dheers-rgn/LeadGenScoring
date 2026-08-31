@@ -45,7 +45,6 @@ export function trainingLeadsRoutes(pool) {
 
   // GET /api/training-leads — paginated list, ordered by conversion_probability DESC
   router.get("/", async (req, res) => {
-
     const page = Math.max(1, parseInt(String(req.query.page || "1"), 10) || 1);
     const rawSize = parseInt(
       String(req.query.pageSize || String(DEFAULT_PAGE_SIZE)),
@@ -116,13 +115,15 @@ export function trainingLeadsRoutes(pool) {
           ProfileSummary,
           TargetingQuestions,
           score_logit_sum,
-          scored_at
+          scored_at,
+          created_at
         FROM dr_training_leads
         ${whereSql}
         ORDER BY (conversion_probability IS NULL) ASC, conversion_probability DESC, id DESC
         LIMIT ? OFFSET ?
       `;
       const [rows] = await pool.query(listSql, [...params, pageSize, offset]);
+      // console.log("rows: ", rows);
 
       return res.json({
         ok: true,

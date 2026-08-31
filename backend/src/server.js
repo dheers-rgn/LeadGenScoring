@@ -63,7 +63,7 @@ app.post("/api/aggregations/generate", async (req, res) => {
 
 app.post("/api/training-leads/load", async (req, res) => {
   try {
-    const limit = req.body?.limit ?? req.query?.limit ?? 1000;
+    const limit = req.body?.limit ?? req.query?.limit;
     const result = await loadTrainingLeads(pool, Number(limit));
     return res.json({ ok: true, ...result });
   } catch (e) {
@@ -136,6 +136,7 @@ app.post("/api/ml/score-training-leads", async (req, res) => {
     const result = await scoreTrainingLeads(pool, process.env, {
       modelVersion: modelVersion ? String(modelVersion) : undefined,
     });
+
     return res.json({ ok: true, ...result });
   } catch (e) {
     return res.status(500).json({ ok: false, error: e?.message || String(e) });
