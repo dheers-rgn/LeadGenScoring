@@ -65,7 +65,8 @@ function getConvertedStatuses() {
  *  3. Join master tables for human-readable labels.
  *  4. Get the most recent remark for the lead.
  */
-async function fetchLatestContacts(pool, limit) {
+async function fetchLatestContacts(pool, limit, fromDate, endDate) {
+  const dateFilter = fromDate && endDate;
   const sql = `
     SELECT
       C.id           AS contact_id,
@@ -122,12 +123,21 @@ async function fetchLatestContacts(pool, limit) {
       ON SubStatus.id = L.lead_sub_status
     LEFT JOIN dr_mode_of_study M
       ON C.study_mode COLLATE utf8mb4_0900_ai_ci = CAST(M.id AS CHAR) COLLATE utf8mb4_0900_ai_ci
+
+    ${dateFilter ? `WHERE C.created_at >= ? AND C.created_at < ?` : ""}
     ORDER BY C.id DESC
     LIMIT ?
   `;
 
-  const [rows] = await pool.query(sql, [limit]);
-  console.log("rows--->: ", rows);
+  const queryParam = [];
+  if (dateFilter) {
+    queryParam.push(fromDate, endDate);
+  }
+  if (limit) {
+    queryParam.push(limit);
+  }
+
+  const [rows] = await pool.query(sql, queryParam);
 
   return rows;
 }
@@ -215,12 +225,17 @@ async function insertRows(pool, rows, chunkSize = 500) {
  * @param {number} [limit] - number of contacts to fetch
  * @returns {{ rowsLoaded: number, limit: number }}
  */
-export async function loadTrainingLeads(pool, limit) {
-  const safeLimit = Math.max(1, limit);
+export async function loadTrainingLeads(pool, param) {
+  const safeLimit = Math.max(1, Number(param.limit || 100));
 
   await ensureTargetTable(pool);
 
-  const rows = await fetchLatestContacts(pool, safeLimit);
+  const rows = await fetchLatestContacts(
+    pool,
+    safeLimit,
+    param.fromDate,
+    param.endDate,
+  );
 
   // Truncate before reload
   await pool.query("TRUNCATE TABLE dr_training_leads");

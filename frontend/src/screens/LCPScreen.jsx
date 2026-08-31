@@ -89,6 +89,12 @@ export default function LCPScreen({ onBack }) {
     summary: "",
     questions: [],
   });
+  const [loadModal, setLoadModal] = useState({
+    open: false,
+    limit: "",
+    fromDate: "",
+    endDate: "",
+  });
   const [profileJobStatus, setProfileJobStatus] = useState("");
   const [profileJobRunning, setProfileJobRunning] = useState(false);
   const [previewProfileStatus, setPreviewProfileStatus] = useState("");
@@ -152,15 +158,47 @@ export default function LCPScreen({ onBack }) {
     setPage(1);
   }
 
-  async function runLoadDataJob() {
+  async function runLoadDataJob(params) {
+    setError("");
+    const payload = {};
+    if (params?.limit) payload.limit = String(params.limit);
+    if (params?.fromDate) payload.fromDate = String(params.fromDate);
+    if (params?.endDate) payload.endDate = String(params.endDate);
+    const qs = new URLSearchParams(payload).toString();
+    const url = qs
+      ? `/api/training-leads/load?${qs}`
+      : "/api/training-leads/load";
     setLoadRunning(true);
     try {
-      const data = await apiPost("/api/training-leads/load");
+      const data = await apiPost(url, {});
       await loadRows();
+      return true;
     } catch (e) {
       setError(e.message);
+      return false;
     } finally {
       setLoadRunning(false);
+    }
+  }
+
+  function openLoadModal() {
+    setLoadModal({ open: true, limit: "", fromDate: "", endDate: "" });
+  }
+
+  function toBackendDate(dateStr, endOfDay) {
+    const s = String(dateStr || "").trim();
+    if (!s) return "";
+    return `${s} ${endOfDay ? "23:59:59" : "00:00:00"}`;
+  }
+
+  async function submitLoadModal() {
+    const ok = await runLoadDataJob({
+      limit: loadModal.limit.trim(),
+      fromDate: toBackendDate(loadModal.fromDate, false),
+      endDate: toBackendDate(loadModal.endDate, true),
+    });
+    if (ok) {
+      setLoadModal({ open: false, limit: "", fromDate: "", endDate: "" });
     }
   }
 
@@ -431,7 +469,7 @@ export default function LCPScreen({ onBack }) {
         </button>
         <button
           type="button"
-          onClick={runLoadDataJob}
+          onClick={openLoadModal}
           disabled={loadRunning}
           style={{
             background: loadRunning
@@ -904,6 +942,230 @@ export default function LCPScreen({ onBack }) {
           {previewProfileRows
             .map((p) => p.name || p.email || `#${p.id}`)
             .join(", ")}
+        </div>
+      )}
+
+      {loadModal.open && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            zIndex: 1200,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+          onClick={() => setLoadModal((m) => ({ ...m, open: false }))}
+        >
+          <div
+            style={{
+              width: "min(480px, 95vw)",
+              background: "#fff",
+              color: "#111",
+              borderRadius: "8px",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.45)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                borderBottom: "1px solid #e7e7e7",
+                padding: "12px 14px",
+              }}
+            >
+              <strong>Load Data</strong>
+              <button
+                type="button"
+                onClick={() => setLoadModal((m) => ({ ...m, open: false }))}
+                style={{
+                  background: "transparent",
+                  border: "1px solid #c9c9c9",
+                  borderRadius: "4px",
+                  padding: "4px 8px",
+                  cursor: "pointer",
+                }}
+              >
+                Close
+              </button>
+            </div>
+            <div
+              style={{
+                padding: "16px 18px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+              }}
+            >
+              <label
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: "#333",
+                  }}
+                >
+                  Limit{" "}
+                  <span style={{ fontWeight: 400, color: "#999" }}>
+                    (optional)
+                  </span>
+                </span>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="e.g. 500 — defaults to 100"
+                  value={loadModal.limit}
+                  onChange={(e) =>
+                    setLoadModal((m) => ({ ...m, limit: e.target.value }))
+                  }
+                  style={{
+                    padding: "8px 10px",
+                    border: "1px solid #c9c9c9",
+                    borderRadius: "4px",
+                    fontSize: "13px",
+                    fontFamily: "inherit",
+                  }}
+                />
+              </label>
+              <label
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: "#333",
+                  }}
+                >
+                  From date{" "}
+                  <span style={{ fontWeight: 400, color: "#999" }}>
+                    (optional)
+                  </span>
+                </span>
+                <input
+                  type="date"
+                  value={loadModal.fromDate}
+                  onChange={(e) =>
+                    setLoadModal((m) => ({ ...m, fromDate: e.target.value }))
+                  }
+                  style={{
+                    padding: "8px 10px",
+                    border: "1px solid #c9c9c9",
+                    borderRadius: "4px",
+                    fontSize: "13px",
+                    fontFamily: "inherit",
+                  }}
+                />
+              </label>
+              <label
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: "#333",
+                  }}
+                >
+                  End date{" "}
+                  <span style={{ fontWeight: 400, color: "#999" }}>
+                    (optional)
+                  </span>
+                </span>
+                <input
+                  type="date"
+                  value={loadModal.endDate}
+                  onChange={(e) =>
+                    setLoadModal((m) => ({ ...m, endDate: e.target.value }))
+                  }
+                  style={{
+                    padding: "8px 10px",
+                    border: "1px solid #c9c9c9",
+                    borderRadius: "4px",
+                    fontSize: "13px",
+                    fontFamily: "inherit",
+                  }}
+                />
+              </label>
+<p
+                style={{
+                  margin: 0,
+                  fontSize: "12px",
+                  color: "#777",
+                  lineHeight: "1.5",
+                }}
+              >
+                All fields are optional. The date range filter only applies
+                when <strong>both</strong> from and end dates are set;
+                otherwise the latest{" "}
+                <strong>limit</strong> contacts are loaded (default 100).
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "8px",
+                  marginTop: "4px",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    setLoadModal((m) => ({ ...m, open: false }))
+                  }
+                  style={{
+                    background: "#f3f3f3",
+                    border: "1px solid #d0d0d0",
+                    color: "#444",
+                    padding: "8px 14px",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={submitLoadModal}
+                  disabled={loadRunning}
+                  style={{
+                    background: loadRunning ? "#d8b21a" : "#f5c400",
+                    border: "1px solid #d8b21a",
+                    color: "#111",
+                    padding: "8px 16px",
+                    borderRadius: "4px",
+                    cursor: loadRunning ? "not-allowed" : "pointer",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    fontFamily: "inherit",
+                  }}
+                >
+                  {loadRunning ? "Loading..." : "Load Data"}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
