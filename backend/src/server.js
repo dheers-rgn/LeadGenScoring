@@ -145,6 +145,7 @@ app.post("/api/ml/score-training-leads", async (req, res) => {
     const result = await scoreTrainingLeads(pool, process.env, {
       modelVersion: modelVersion ? String(modelVersion) : undefined,
     });
+    console.log("result: ", result);
 
     return res.json({ ok: true, ...result });
   } catch (e) {

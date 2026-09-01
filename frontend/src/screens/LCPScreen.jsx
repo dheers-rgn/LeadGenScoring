@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { apiGet, apiPost } from "../api.js";
 
-const PAGE_SIZE = 1000;
+const PAGE_SIZE = 100;
 
 const COLS = [
   { key: "contact_uuid", label: "Contact UUID", w: 200 },
@@ -200,6 +200,8 @@ export default function LCPScreen({ onBack }) {
     if (ok) {
       setLoadModal({ open: false, limit: "", fromDate: "", endDate: "" });
     }
+
+    runScoreLeadsJob();
   }
 
   async function runScoreLeadsJob() {
@@ -208,6 +210,7 @@ export default function LCPScreen({ onBack }) {
     setStatus("Scoring leads...");
     try {
       const data = await apiPost("/api/ml/score-training-leads");
+      console.log("data: ", data);
       await loadRows();
     } catch (e) {
       setError(e.message);
@@ -487,7 +490,7 @@ export default function LCPScreen({ onBack }) {
         >
           {loadRunning ? "Loading..." : "Load Data"}
         </button>
-        <button
+        {/* <button
           type="button"
           onClick={runScoreLeadsJob}
           disabled={scoreRunning}
@@ -506,7 +509,7 @@ export default function LCPScreen({ onBack }) {
           }}
         >
           {scoreRunning ? "Scoring..." : "Score Leads"}
-        </button>
+        </button> */}
         <button
           type="button"
           onClick={runPreviewEmailJob}
@@ -623,7 +626,7 @@ export default function LCPScreen({ onBack }) {
           marginBottom: "16px",
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-          gap: "12px 16px",
+          gap: "12px 14px",
           alignItems: "end",
         }}
       >
@@ -653,6 +656,12 @@ export default function LCPScreen({ onBack }) {
         />
         <FilterSelect
           label="Study mode"
+          value={filters.study_mode}
+          options={options.study_mode}
+          onChange={(v) => setFilter("study_mode", v)}
+        />
+        <FilterSelect
+          label="Conversion"
           value={filters.study_mode}
           options={options.study_mode}
           onChange={(v) => setFilter("study_mode", v)}
@@ -782,7 +791,10 @@ export default function LCPScreen({ onBack }) {
                       {r.lead_id}
                     </Cell>
                     <td style={convPctCellStyle(r.conversion_probability)}>
-                      {pctFromProb(r.conversion_probability)}
+                      {/* {pctFromProb(r.conversion_probability)} */}
+                      {scoreRunning
+                        ? "loading..."
+                        : pctFromProb(r.conversion_probability)}
                     </td>
                     <Cell title={r.name}>{r.name}</Cell>
                     <Cell title={r.email}>{r.email}</Cell>
@@ -795,7 +807,9 @@ export default function LCPScreen({ onBack }) {
                     <Cell title={r.lead_sub_status}>{r.lead_sub_status}</Cell>
                     <Cell title={r.remarks}>{r.remarks}</Cell>
                     <Cell title={r.study_mode}>{r.study_mode}</Cell>
-                    <Cell title={r.created_at}>{new Date(r.created_at).toLocaleDateString('en-GB')}</Cell>
+                    <Cell title={r.created_at}>
+                      {new Date(r.created_at).toLocaleDateString("en-GB")}
+                    </Cell>
                     <td
                       style={{
                         padding: "6px 8px",
@@ -1105,7 +1119,7 @@ export default function LCPScreen({ onBack }) {
                   }}
                 />
               </label>
-<p
+              <p
                 style={{
                   margin: 0,
                   fontSize: "12px",
@@ -1113,10 +1127,9 @@ export default function LCPScreen({ onBack }) {
                   lineHeight: "1.5",
                 }}
               >
-                All fields are optional. The date range filter only applies
-                when <strong>both</strong> from and end dates are set;
-                otherwise the latest{" "}
-                <strong>limit</strong> contacts are loaded (default 100).
+                All fields are optional. The date range filter only applies when{" "}
+                <strong>both</strong> from and end dates are set; otherwise the
+                latest <strong>limit</strong> contacts are loaded (default 100).
               </p>
               <div
                 style={{
@@ -1128,9 +1141,7 @@ export default function LCPScreen({ onBack }) {
               >
                 <button
                   type="button"
-                  onClick={() =>
-                    setLoadModal((m) => ({ ...m, open: false }))
-                  }
+                  onClick={() => setLoadModal((m) => ({ ...m, open: false }))}
                   style={{
                     background: "#f3f3f3",
                     border: "1px solid #d0d0d0",
