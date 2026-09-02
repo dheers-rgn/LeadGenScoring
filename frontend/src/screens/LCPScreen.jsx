@@ -59,7 +59,15 @@ export default function LCPScreen({ onBack }) {
     lead_status: "",
     lead_sub_status: "",
     study_mode: "",
+    convFilters: "",
   });
+  const convFilters = [
+    ">50%",
+    ">60%",
+    ">70%",
+    ">80%",
+    ">90%",
+  ];
   const [options, setOptions] = useState({
     country: [],
     qualification: [],
@@ -112,6 +120,7 @@ export default function LCPScreen({ onBack }) {
         lead_status: data.lead_status || [],
         lead_sub_status: data.lead_sub_status || [],
         study_mode: data.study_mode || [],
+        
       });
     } catch (e) {
       setError(e.message);
@@ -130,6 +139,7 @@ export default function LCPScreen({ onBack }) {
     if (filters.lead_sub_status)
       q.set("lead_sub_status", filters.lead_sub_status);
     if (filters.study_mode) q.set("study_mode", filters.study_mode);
+    if (filters.convFilters) q.set("convFilters", filters.convFilters);
     try {
       const data = await apiGet(`/api/training-leads?${q.toString()}`);
       setRows(data.rows || []);
@@ -662,9 +672,9 @@ export default function LCPScreen({ onBack }) {
         />
         <FilterSelect
           label="Conversion"
-          value={filters.study_mode}
-          options={options.study_mode}
-          onChange={(v) => setFilter("study_mode", v)}
+          value={filters.convFilters}
+          options={convFilters}
+          onChange={(v) => setFilter("convFilters", v)}
         />
         <div
           style={{
@@ -683,6 +693,7 @@ export default function LCPScreen({ onBack }) {
                 lead_status: "",
                 lead_sub_status: "",
                 study_mode: "",
+                convFilters: "",
               });
               setPage(1);
             }}

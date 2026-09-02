@@ -61,6 +61,7 @@ export function trainingLeadsRoutes(pool) {
     const leadStatus = trimOrNull(req.query.lead_status);
     const leadSubStatus = trimOrNull(req.query.lead_sub_status);
     const studyMode = trimOrNull(req.query.study_mode);
+    const convFilters = trimOrNull(req.query.convFilters);
 
     const where = [];
     const params = [];
@@ -83,6 +84,27 @@ export function trainingLeadsRoutes(pool) {
     if (studyMode) {
       where.push("study_mode = ?");
       params.push(studyMode);
+    }
+    if (convFilters) {
+      const match = convFilters.match(/^(<=|>=|<|>)\s*(\d+(?:\.\d+)?)\s*%?$/);
+      if (match) {
+        const operator = match[1];
+        const pct = Number(match[2]);
+        const n = Number.isFinite(pct) ? pct / 100 : null;
+        if (n != null) {
+          
+          where.push("conversion_probability IS NOT NULL");
+          where.push(`conversion_probability ${operator} ?`);
+          params.push(n);
+        }
+      } else {
+        const plain = Number.parseFloat(convFilters);
+        if (Number.isFinite(plain)) {
+          where.push("conversion_probability IS NOT NULL");
+          where.push("conversion_probability < ?");
+          params.push(plain / 100);
+        }
+      }
     }
 
     const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
